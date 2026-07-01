@@ -1,0 +1,17 @@
+{
+  "name": "agent-plugins",
+  "owner": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "metadata": {
+    "description": "Claude Code plugin marketplace by kuboon."
+  },
+  "plugins": [
+    {
+      "name": "github-actions-versions",
+      "source": "./plugins/github-actions-versions",
+      "description": "Pin GitHub Actions to current, non-deprecated major versions when writing or editing workflows."
+    }
+  ]
+}
