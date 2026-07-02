@@ -1,0 +1,10 @@
+{
+  "name": "github-actions-versions",
+  "description": "Pin GitHub Actions to current, non-deprecated major versions when writing or editing GitHub Actions workflows.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}
