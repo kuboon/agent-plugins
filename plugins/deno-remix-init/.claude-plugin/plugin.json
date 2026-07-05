@@ -1,0 +1,10 @@
+{
+  "name": "deno-remix-init",
+  "description": "When initializing a new project, use Deno (not Node.js) and Remix v3 as the web framework, following the deno-remix-reference patterns.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

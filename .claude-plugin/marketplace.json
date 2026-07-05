@@ -12,6 +12,11 @@
       "name": "github-actions-versions",
       "source": "./plugins/github-actions-versions",
       "description": "Pin GitHub Actions to current, non-deprecated major versions when writing or editing workflows."
+    },
+    {
+      "name": "deno-remix-init",
+      "source": "./plugins/deno-remix-init",
+      "description": "When initializing a new project, use Deno (not Node.js) and Remix v3 as the web framework, following the deno-remix-reference patterns."
     }
   ]
 }
