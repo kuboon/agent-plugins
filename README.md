@@ -4,11 +4,29 @@ A [Claude Code](https://code.claude.com) plugin marketplace.
 
 ## Installation
 
-Add this marketplace, then install the plugin you want:
+Inside a Claude Code session, add this marketplace and install the plugin you
+want:
 
 ```
 /plugin marketplace add kuboon/agent-plugins
 /plugin install github-actions-versions@agent-plugins
+/plugin install deno-remix-init@agent-plugins
+```
+
+Or from a shell, using the `claude` CLI (the non-interactive equivalent):
+
+```bash
+claude plugin marketplace add kuboon/agent-plugins
+claude plugin install github-actions-versions@agent-plugins
+claude plugin install deno-remix-init@agent-plugins
+```
+
+No global install? Drive the same CLI through `npx`:
+
+```bash
+npx @anthropic-ai/claude-code plugin marketplace add kuboon/agent-plugins
+npx @anthropic-ai/claude-code plugin install github-actions-versions@agent-plugins
+npx @anthropic-ai/claude-code plugin install deno-remix-init@agent-plugins
 ```
 
 ## Plugins
