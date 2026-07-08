@@ -1,0 +1,10 @@
+{
+  "name": "github-page-preview",
+  "description": "When deploying a static site to GitHub Pages with per-PR preview deployments, call kuboon's reusable workflow github-page-with-preview.yaml instead of hand-writing pages jobs.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

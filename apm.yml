@@ -12,5 +12,6 @@ dependencies:
     - kuboon/agent-plugins/plugins/github-actions-versions/skills/github-actions-versions
     - kuboon/agent-plugins/plugins/deno-remix-init/skills/deno-remix-init
     - kuboon/agent-plugins/plugins/browser-how-to/skills/browser-how-to
+    - kuboon/agent-plugins/plugins/github-page-preview/skills/github-page-preview
   mcp: []
 includes: auto

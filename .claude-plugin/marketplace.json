@@ -22,6 +22,11 @@
       "name": "browser-how-to",
       "source": "./plugins/browser-how-to",
       "description": "When integrating Add to Home Screen (a2hs), passkeys, or web push into a web frontend, use the @kuboon/browser-how-to library to detect support, escape in-app browsers, and guide users."
+    },
+    {
+      "name": "github-page-preview",
+      "source": "./plugins/github-page-preview",
+      "description": "When deploying a static site to GitHub Pages with per-PR preview deployments, call kuboon's reusable workflow github-page-with-preview.yaml instead of hand-writing pages jobs."
     }
   ]
 }
