@@ -32,6 +32,22 @@ npx @anthropic-ai/claude-code plugin install deno-remix-init@agent-plugins
 npx @anthropic-ai/claude-code plugin install browser-how-to@agent-plugins
 ```
 
+### Install every skill into user scope with APM
+
+To install **all** skills in this repo into your user-level skills
+(`~/.claude/skills/`) — so they load in every project, no per-session setup — use
+[APM](https://github.com/microsoft/apm) and the root `apm.yml`. One command, no
+`git clone` (APM fetches the repo for you):
+
+```bash
+pip install apm-cli                    # or: curl -sSL https://aka.ms/apm-unix | sh
+apm install -g kuboon/agent-plugins
+```
+
+`-g` installs to user scope; the `apm.yml` here enumerates every skill, so all of
+them land in `~/.claude/skills/`. Add a skill to the repo, add one line to
+`apm.yml`, and the next `apm install -g` picks it up.
+
 ## Plugins
 
 ### `github-actions-versions`
