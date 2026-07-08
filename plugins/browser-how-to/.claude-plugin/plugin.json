@@ -1,0 +1,10 @@
+{
+  "name": "browser-how-to",
+  "description": "When integrating Add to Home Screen (a2hs), passkeys, or web push into a web frontend, use the @kuboon/browser-how-to library to detect support, escape in-app browsers, and guide users.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

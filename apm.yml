@@ -1,0 +1,16 @@
+name: agent-plugins-skills
+version: 1.0.0
+description: >-
+  Install every skill in this repo into user scope (~/.claude/skills/) with one
+  `apm install -g kuboon/agent-plugins`. Coexists with the Claude Code plugin
+  marketplace (.claude-plugin/marketplace.json); this manifest is the APM entry.
+author: Ohkubo KOHEI
+targets:
+  - claude
+dependencies:
+  apm:
+    - kuboon/agent-plugins/plugins/github-actions-versions/skills/github-actions-versions
+    - kuboon/agent-plugins/plugins/deno-remix-init/skills/deno-remix-init
+    - kuboon/agent-plugins/plugins/browser-how-to/skills/browser-how-to
+  mcp: []
+includes: auto
