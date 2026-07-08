@@ -12,6 +12,7 @@ want:
 /plugin install github-actions-versions@agent-plugins
 /plugin install deno-remix-init@agent-plugins
 /plugin install browser-how-to@agent-plugins
+/plugin install github-page-preview@agent-plugins
 ```
 
 Or from a shell, using the `claude` CLI (the non-interactive equivalent):
@@ -21,6 +22,7 @@ claude plugin marketplace add kuboon/agent-plugins
 claude plugin install github-actions-versions@agent-plugins
 claude plugin install deno-remix-init@agent-plugins
 claude plugin install browser-how-to@agent-plugins
+claude plugin install github-page-preview@agent-plugins
 ```
 
 No global install? Drive the same CLI through `npx`:
@@ -30,6 +32,7 @@ npx @anthropic-ai/claude-code plugin marketplace add kuboon/agent-plugins
 npx @anthropic-ai/claude-code plugin install github-actions-versions@agent-plugins
 npx @anthropic-ai/claude-code plugin install deno-remix-init@agent-plugins
 npx @anthropic-ai/claude-code plugin install browser-how-to@agent-plugins
+npx @anthropic-ai/claude-code plugin install github-page-preview@agent-plugins
 ```
 
 ### Install every skill into user scope with APM
@@ -74,3 +77,12 @@ detect device/browser support, escape in-app browsers (Messenger, LINE, etc.),
 and guide users — instead of hand-rolling UA sniffing. Ships a skill covering the
 JSR install, tree-shakeable subpaths, `show*Guide()` UI vs. headless detection,
 and the iOS-push-needs-a2hs ordering.
+
+### `github-page-preview`
+
+When deploying a static site to **GitHub Pages** with **per-PR preview**
+deployments, calls kuboon's reusable workflow
+[`github-page-with-preview.yaml`](https://github.com/kuboon/workflows/blob/main/.github/workflows/github-page-with-preview.yaml)
+instead of hand-writing the pages job chain. Ships a skill with the caller
+workflow, its inputs, and the requirements (Pages source, a `mise`/custom build,
+and the essential `BASE_URL`-aware build for correct preview subpaths).
