@@ -11,6 +11,7 @@ want:
 /plugin marketplace add kuboon/agent-plugins
 /plugin install github-actions-versions@agent-plugins
 /plugin install deno-remix-init@agent-plugins
+/plugin install browser-how-to@agent-plugins
 ```
 
 Or from a shell, using the `claude` CLI (the non-interactive equivalent):
@@ -19,6 +20,7 @@ Or from a shell, using the `claude` CLI (the non-interactive equivalent):
 claude plugin marketplace add kuboon/agent-plugins
 claude plugin install github-actions-versions@agent-plugins
 claude plugin install deno-remix-init@agent-plugins
+claude plugin install browser-how-to@agent-plugins
 ```
 
 No global install? Drive the same CLI through `npx`:
@@ -27,6 +29,7 @@ No global install? Drive the same CLI through `npx`:
 npx @anthropic-ai/claude-code plugin marketplace add kuboon/agent-plugins
 npx @anthropic-ai/claude-code plugin install github-actions-versions@agent-plugins
 npx @anthropic-ai/claude-code plugin install deno-remix-init@agent-plugins
+npx @anthropic-ai/claude-code plugin install browser-how-to@agent-plugins
 ```
 
 ## Plugins
@@ -45,3 +48,13 @@ When initializing a new project, uses **Deno** (not Node.js) as the runtime and
 overrides the model's Node.js + Express/Next default with the pinned package set,
 project layout, and CI/devcontainer setup from
 [deno-remix-reference](https://github.com/kuboon/deno-remix-reference/tree/main/reference).
+
+### `browser-how-to`
+
+When integrating **Add to Home Screen** (a2hs), **passkeys**, or **web push**
+into a web frontend, uses the
+[`@kuboon/browser-how-to`](https://kuboon.github.io/browser-how-to/) library to
+detect device/browser support, escape in-app browsers (Messenger, LINE, etc.),
+and guide users — instead of hand-rolling UA sniffing. Ships a skill covering the
+JSR install, tree-shakeable subpaths, `show*Guide()` UI vs. headless detection,
+and the iOS-push-needs-a2hs ordering.

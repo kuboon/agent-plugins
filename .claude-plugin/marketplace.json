@@ -17,6 +17,11 @@
       "name": "deno-remix-init",
       "source": "./plugins/deno-remix-init",
       "description": "When initializing a new project, use Deno (not Node.js) and Remix v3 as the web framework, following the deno-remix-reference patterns."
+    },
+    {
+      "name": "browser-how-to",
+      "source": "./plugins/browser-how-to",
+      "description": "When integrating Add to Home Screen (a2hs), passkeys, or web push into a web frontend, use the @kuboon/browser-how-to library to detect support, escape in-app browsers, and guide users."
     }
   ]
 }
