@@ -13,6 +13,7 @@ want:
 /plugin install deno-remix-init@agent-plugins
 /plugin install browser-how-to@agent-plugins
 /plugin install github-page-preview@agent-plugins
+/plugin install uint8array-base64@agent-plugins
 ```
 
 Or from a shell, using the `claude` CLI (the non-interactive equivalent):
@@ -23,6 +24,7 @@ claude plugin install github-actions-versions@agent-plugins
 claude plugin install deno-remix-init@agent-plugins
 claude plugin install browser-how-to@agent-plugins
 claude plugin install github-page-preview@agent-plugins
+claude plugin install uint8array-base64@agent-plugins
 ```
 
 No global install? Drive the same CLI through `npx`:
@@ -33,6 +35,7 @@ npx @anthropic-ai/claude-code plugin install github-actions-versions@agent-plugi
 npx @anthropic-ai/claude-code plugin install deno-remix-init@agent-plugins
 npx @anthropic-ai/claude-code plugin install browser-how-to@agent-plugins
 npx @anthropic-ai/claude-code plugin install github-page-preview@agent-plugins
+npx @anthropic-ai/claude-code plugin install uint8array-base64@agent-plugins
 ```
 
 ### Install every skill into user scope with APM
@@ -86,3 +89,11 @@ deployments, calls kuboon's reusable workflow
 instead of hand-writing the pages job chain. Ships a skill with the caller
 workflow, its inputs, and the requirements (Pages source, a `mise`/custom build,
 and the essential `BASE_URL`-aware build for correct preview subpaths).
+
+### `uint8array-base64`
+
+For base64 (and hex) in JavaScript, uses the native
+`Uint8Array.fromBase64()` / `toBase64()` / `setFromBase64()` methods — binary-safe
+and cross-runtime (Deno + browser) — instead of `btoa`/`atob` string juggling or
+Node-only `Buffer`. Ships a skill with the API, base64url/omitPadding recipes,
+`TextEncoder`/`TextDecoder` combos, and a feature-detect fallback.

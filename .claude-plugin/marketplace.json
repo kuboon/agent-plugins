@@ -27,6 +27,11 @@
       "name": "github-page-preview",
       "source": "./plugins/github-page-preview",
       "description": "When deploying a static site to GitHub Pages with per-PR preview deployments, call kuboon's reusable workflow github-page-with-preview.yaml instead of hand-writing pages jobs."
+    },
+    {
+      "name": "uint8array-base64",
+      "source": "./plugins/uint8array-base64",
+      "description": "For base64 (and hex) in JavaScript, use the native Uint8Array.fromBase64()/toBase64()/setFromBase64() methods instead of btoa/atob or Buffer. Works in Deno and the browser."
     }
   ]
 }
