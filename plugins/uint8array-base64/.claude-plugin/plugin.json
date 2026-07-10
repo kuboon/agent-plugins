@@ -1,0 +1,10 @@
+{
+  "name": "uint8array-base64",
+  "description": "For base64 (and hex) in JavaScript, use the native Uint8Array.fromBase64()/toBase64()/setFromBase64() methods instead of btoa/atob or Buffer. Works in Deno and the browser.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}
