@@ -4,40 +4,6 @@ A [Claude Code](https://code.claude.com) plugin marketplace.
 
 ## Installation
 
-Inside a Claude Code session, add this marketplace and install the plugin you
-want:
-
-```
-/plugin marketplace add kuboon/agent-plugins
-/plugin install github-actions-versions@agent-plugins
-/plugin install deno-remix-init@agent-plugins
-/plugin install browser-how-to@agent-plugins
-/plugin install github-page-preview@agent-plugins
-/plugin install uint8array-base64@agent-plugins
-```
-
-Or from a shell, using the `claude` CLI (the non-interactive equivalent):
-
-```bash
-claude plugin marketplace add kuboon/agent-plugins
-claude plugin install github-actions-versions@agent-plugins
-claude plugin install deno-remix-init@agent-plugins
-claude plugin install browser-how-to@agent-plugins
-claude plugin install github-page-preview@agent-plugins
-claude plugin install uint8array-base64@agent-plugins
-```
-
-No global install? Drive the same CLI through `npx`:
-
-```bash
-npx @anthropic-ai/claude-code plugin marketplace add kuboon/agent-plugins
-npx @anthropic-ai/claude-code plugin install github-actions-versions@agent-plugins
-npx @anthropic-ai/claude-code plugin install deno-remix-init@agent-plugins
-npx @anthropic-ai/claude-code plugin install browser-how-to@agent-plugins
-npx @anthropic-ai/claude-code plugin install github-page-preview@agent-plugins
-npx @anthropic-ai/claude-code plugin install uint8array-base64@agent-plugins
-```
-
 ### Install every skill into user scope with APM
 
 To install **all** skills in this repo into your user-level skills
@@ -53,6 +19,17 @@ apm install -g kuboon/agent-plugins
 `-g` installs to user scope; the `apm.yml` here enumerates every skill, so all of
 them land in `~/.claude/skills/`. Add a skill to the repo, add one line to
 `apm.yml`, and the next `apm install -g` picks it up.
+
+### Or per-plugin, using the `claude` CLI (the non-interactive equivalent)
+
+```bash
+claude plugin marketplace add kuboon/agent-plugins
+claude plugin install github-actions-versions@agent-plugins
+claude plugin install deno-remix-init@agent-plugins
+claude plugin install browser-how-to@agent-plugins
+claude plugin install github-page-preview@agent-plugins
+claude plugin install uint8array-base64@agent-plugins
+```
 
 ## Plugins
 
