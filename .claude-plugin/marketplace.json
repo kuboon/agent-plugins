@@ -20,7 +20,7 @@
     },
     {
       "name": "browser-how-to",
-      "source": "./plugins/browser-how-to",
+      "source": { "source": "github", "repo": "kuboon/browser-how-to" },
       "description": "When integrating Add to Home Screen (a2hs), passkeys, or web push into a web frontend, use the @kuboon/browser-how-to library to detect support, escape in-app browsers, and guide users."
     },
     {

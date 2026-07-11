@@ -58,6 +58,11 @@ and guide users — instead of hand-rolling UA sniffing. Ships a skill covering 
 JSR install, tree-shakeable subpaths, `show*Guide()` UI vs. headless detection,
 and the iOS-push-needs-a2hs ordering.
 
+> Sourced externally from the library's own repo
+> ([`kuboon/browser-how-to`](https://github.com/kuboon/browser-how-to)) so the
+> skill stays next to the implementation — the marketplace entry points at it via
+> a `github` source, and `apm.yml` depends on `kuboon/browser-how-to` directly.
+
 ### `github-page-preview`
 
 When deploying a static site to **GitHub Pages** with **per-PR preview**
