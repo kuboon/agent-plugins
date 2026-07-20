@@ -21,7 +21,7 @@
     {
       "name": "remix-ui-text-field-editable",
       "source": "./plugins/remix-ui-text-field-editable",
-      "description": "When writing a freely-typed text input in @remix-run/ui (Remix v3), avoid binding value= to component state or it will race the framework's controlled-value reflection and become uneditable."
+      "description": "When writing a freely-typed text input in @remix-run/ui (Remix v3), use defaultValue= instead of value= or it will race the framework's controlled-value reflection and become uneditable."
     },
     {
       "name": "browser-how-to",
