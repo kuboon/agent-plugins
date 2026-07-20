@@ -33,6 +33,16 @@ on:
     branches: [main]
   pull_request:
 
+# REQUIRED. A reusable workflow runs with the CALLER's token permissions, so you
+# must grant these here — the callee's own permissions block cannot add them.
+# Omit this and the call fails with "is requesting 'pages: write, …' but is only
+# allowed 'pages: none, …'".
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: write
+
 jobs:
   pages:
     uses: kuboon/workflows/.github/workflows/github-page-with-preview.yaml@main
@@ -54,9 +64,12 @@ consistent with the `github-actions-versions` skill's pinning policy.
 | `build-command` | `mise run build` | Command that builds the static site. Run once for `main`, once for the PR branch. |
 | `dist-dir` | `dist` | Directory the build writes the site into, relative to the checkout. |
 
-The workflow declares its own `permissions` (`pages: write`, `id-token: write`,
-`pull-requests: write`) and a `pages` concurrency group, so the caller only needs
-the triggers above.
+The reusable workflow needs `contents: read`, `pages: write`, `id-token: write`,
+and `pull-requests: write`. **You must grant these in the caller's top-level
+`permissions:` block** (shown above) — a called workflow runs with the caller's
+`GITHUB_TOKEN`, and the callee's own `permissions:` can only *narrow* that set,
+never expand it. The workflow also defines its own `pages` concurrency group, so
+the caller needs only the triggers + permissions.
 
 ## What the consuming repo must provide
 
@@ -90,6 +103,19 @@ the triggers above.
 
 ## Gotchas
 
+- **Caller must grant the permissions (most common failure).** Without the
+  top-level `permissions:` block above, the call is rejected before it runs:
+
+  > Error calling workflow '…github-page-with-preview.yaml@main'. The workflow is
+  > requesting 'pages: write, pull-requests: write, id-token: write', but is only
+  > allowed 'pages: none, pull-requests: none, id-token: none'. … The nested job
+  > 'comment' is requesting 'pull-requests: write', but is only allowed
+  > 'pull-requests: none'.
+
+  Fix: add the four permissions to the **caller** workflow (not the reusable
+  one). This bites when the repo/org default `GITHUB_TOKEN` is read-only
+  (Settings → Actions → General → Workflow permissions), which is the modern
+  default — the reusable workflow's own `permissions:` block cannot lift it.
 - **`BASE_URL` is mandatory for correct previews.** A build that ignores it
   produces a preview with root-absolute asset paths that 404 under the subpath.
 - **Only one PR preview persists at a time.** Each run deploys a `dist/` that
