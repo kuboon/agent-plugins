@@ -96,32 +96,41 @@ Read the live value from the event itself (`e.currentTarget.value`) — that's
 always correct and current, since the DOM owns the value once mounted.
 
 If you need to read the value somewhere other than an event handler (e.g. on
-form submit), give the input an `id` and read `document.getElementById(id).value`
-— this is the pattern `deno-remix-reference`'s `reference/client/push_card.tsx`
-uses for its "バッジ数" number input, which also has no `value` prop:
+form submit), don't reach for `id` + `document.getElementById` — `@remix-run/ui`
+has a `ref` mixin for exactly this (`runtime/mixins/ref-mixin.ts`), the same
+role `ref` plays in React. It's a `MixinFactory` invoked with the live DOM node
+on insert and cleaned up (via an `AbortSignal`) on removal:
 
 ```tsx
-const BADGE_INPUT_ID = "rmx-push-badge-input";
+import { ref } from "@remix-run/ui/mixins"; // or wherever `ref` is re-exported from in your version
+
+let nameInput: HTMLInputElement | undefined;
 
 <input
-  id={BADGE_INPUT_ID}
-  type="number"
-  min="0"
-  step="1"
-  inputmode="numeric"
-  placeholder="バッジ数"
-  aria-label="バッジ数"
-  class="input input-bordered input-sm w-24"
+  type="text"
+  class="grow"
+  placeholder="あなたの名前"
+  maxlength={40}
+  defaultValue={initialName}
+  mix={[
+    ref((node) => {
+      nameInput = node as HTMLInputElement;
+    }),
+    on("input", (e) => {
+      onNameInput((e.currentTarget as HTMLInputElement).value);
+    }),
+  ]}
 />;
 
-const readBadgeCount = (): number | undefined => {
-  const el = document.getElementById(BADGE_INPUT_ID) as HTMLInputElement | null;
-  const raw = el?.value.trim();
-  if (!raw) return undefined;
-  const n = Number(raw);
-  return Number.isInteger(n) && n >= 0 ? n : undefined;
-};
+// later, e.g. on submit:
+const submittedName = nameInput?.value ?? "";
 ```
+
+`@remix-run/ui` itself uses this pattern internally (e.g. `menu/index.tsx`
+captures a `buttonRef` this way) — it's the idiomatic way to hold a live handle
+to a node, scoped to the component instance instead of the document, and it
+doesn't require inventing a DOM id that could collide if the component renders
+more than once on a page.
 
 Rules of thumb:
 
@@ -130,12 +139,13 @@ Rules of thumb:
    one-time seed, not a per-render binding, and it never triggers the
    controlled-reflection race.
 2. Read what the user typed from the event (`e.currentTarget.value` inside the
-   `input`/`change` handler) or, if you need it elsewhere, via `id` +
-   `document.getElementById(...).value`.
+   `input`/`change` handler) or, if you need it elsewhere (e.g. on submit),
+   capture the node with the `ref` mixin and read `.value` off it directly —
+   not `document.getElementById(...)`.
 3. If you need to *programmatically* replace the field's contents later (not
-   just seed it once), set `element.value` directly through the DOM (or via a
-   mix lifecycle hook) rather than by re-rendering with a `value` prop — that
-   avoids ever registering it as a controlled input.
+   just seed it once), set `.value` on the `ref`-captured node directly rather
+   than by re-rendering with a `value` prop — that avoids ever registering it
+   as a controlled input.
 4. Checkboxes/radios have the same pair: use `defaultChecked=`, not
    `checked=`, unless you truly need a fully controlled checkbox and can
    guarantee the state write + `handle.update()` land synchronously inside
