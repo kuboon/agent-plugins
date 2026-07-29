@@ -94,10 +94,10 @@ outside handlers, and the `defaultChecked` equivalent.
 ### `admin-view-toggle`
 
 When building a feature whose UI differs by privilege, ships a **frontend-only
-「一般 / admin」 view switch** for admin users, so one account can eyeball both
-UIs in the same tab while developing. Ships a skill with the single-derived-flag
-shape (`isAdminView = actualIsAdmin && viewRole === "admin"`), the stray
-`user.isAdmin` leak to grep for, cookie-vs-localStorage persistence and the
-masked-mode indicator, and the hard line that the backend never reads the toggle
-— it always authorizes on the real role, so this tests layout, never
-authorization.
+「一般 / admin」 view switch** for admin users — **defaulting to 一般**, so an
+admin sees the regular UI and switches to admin only to use a privileged
+feature. Ships a skill with the single-derived-flag shape (real role is admin
+**and** view preference is admin), the stray `user.isAdmin` leak to grep for,
+cookie-vs-localStorage persistence and the admin-mode indicator, and the hard
+line that the backend never reads the toggle — it always authorizes on the real
+role, so this tests layout, never authorization.
