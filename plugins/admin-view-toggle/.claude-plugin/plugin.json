@@ -1,0 +1,10 @@
+{
+  "name": "admin-view-toggle",
+  "description": "When building admin-only features, give admin users a frontend-only 一般/admin view switch so they can eyeball both UIs from one account. The backend keeps authorizing as admin and never reads the toggle.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

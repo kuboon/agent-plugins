@@ -29,6 +29,8 @@ claude plugin install deno-remix-init@agent-plugins
 claude plugin install browser-how-to@agent-plugins
 claude plugin install github-page-preview@agent-plugins
 claude plugin install uint8array-base64@agent-plugins
+claude plugin install remix-ui-text-field-editable@agent-plugins
+claude plugin install admin-view-toggle@agent-plugins
 ```
 
 ## Plugins
@@ -79,3 +81,23 @@ For base64 (and hex) in JavaScript, uses the native
 and cross-runtime (Deno + browser) — instead of `btoa`/`atob` string juggling or
 Node-only `Buffer`. Ships a skill with the API, base64url/omitPadding recipes,
 `TextEncoder`/`TextDecoder` combos, and a feature-detect fallback.
+
+### `remix-ui-text-field-editable`
+
+When writing a freely-typed text input in `@remix-run/ui` (Remix v3), uses
+`defaultValue=` instead of `value=`. Binding `value=` to state makes the field
+uneditable — the framework's controlled-value reflection runs in a queued
+microtask and reverts each keystroke unless the state write lands synchronously.
+Ships a skill covering the failure mode, the `ref` mixin for reading values
+outside handlers, and the `defaultChecked` equivalent.
+
+### `admin-view-toggle`
+
+When building a feature whose UI differs by privilege, ships a **frontend-only
+「一般 / admin」 view switch** for admin users, so one account can eyeball both
+UIs in the same tab while developing. Ships a skill with the single-derived-flag
+shape (`isAdminView = actualIsAdmin && viewRole === "admin"`), the stray
+`user.isAdmin` leak to grep for, cookie-vs-localStorage persistence and the
+masked-mode indicator, and the hard line that the backend never reads the toggle
+— it always authorizes on the real role, so this tests layout, never
+authorization.

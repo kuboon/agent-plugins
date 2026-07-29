@@ -37,6 +37,11 @@
       "name": "uint8array-base64",
       "source": "./plugins/uint8array-base64",
       "description": "For base64 (and hex) in JavaScript, use the native Uint8Array.fromBase64()/toBase64()/setFromBase64() methods instead of btoa/atob or Buffer. Works in Deno and the browser."
+    },
+    {
+      "name": "admin-view-toggle",
+      "source": "./plugins/admin-view-toggle",
+      "description": "When building admin-only features, give admin users a frontend-only 一般/admin view switch so one account can eyeball both UIs. The backend keeps authorizing as admin and never reads the toggle."
     }
   ]
 }

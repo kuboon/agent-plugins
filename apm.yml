@@ -14,5 +14,7 @@ dependencies:
     - kuboon/browser-how-to
     - kuboon/agent-plugins/plugins/github-page-preview/skills/github-page-preview
     - kuboon/agent-plugins/plugins/uint8array-base64/skills/uint8array-base64
+    - kuboon/agent-plugins/plugins/remix-ui-text-field-editable/skills/remix-ui-text-field-editable
+    - kuboon/agent-plugins/plugins/admin-view-toggle/skills/admin-view-toggle
   mcp: []
 includes: auto
