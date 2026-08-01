@@ -31,6 +31,7 @@ claude plugin install github-page-preview@agent-plugins
 claude plugin install uint8array-base64@agent-plugins
 claude plugin install remix-ui-text-field-editable@agent-plugins
 claude plugin install admin-view-toggle@agent-plugins
+claude plugin install deno-min-dep-age@agent-plugins
 ```
 
 ## Plugins
@@ -101,3 +102,14 @@ feature. Ships a skill with the single-derived-flag shape (real role is admin
 cookie-vs-localStorage persistence and the admin-mode indicator, and the hard
 line that the backend never reads the toggle — it always authorizes on the real
 role, so this tests layout, never authorization.
+
+### `deno-min-dep-age`
+
+When a Deno dependency bump is refused by **`minimumDependencyAge`** (24h by
+default since Deno 2.9, even when unset), exempts the self-published
+`@kuboon` scope with `minimumDependencyAge.exclude` instead of lowering the age
+or passing `--min-dep-age 0` — scoped trust, not a disabled supply-chain delay.
+Ships a skill with the error signature to recognize, the `jsr:@kuboon/*` scope
+wildcard, and the exclude-entry rules verified against Deno 2.9.4 (the `jsr:`/
+`npm:` prefix is mandatory, a version suffix is silently ignored, and exclusion
+does not cascade to transitive dependencies).

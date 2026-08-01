@@ -1,0 +1,10 @@
+{
+  "name": "deno-min-dep-age",
+  "description": "When a Deno dependency update is blocked by minimumDependencyAge, exclude the self-maintained @kuboon packages via minimumDependencyAge.exclude (Deno 2.9+) instead of lowering or disabling the age for every dependency.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

@@ -42,6 +42,11 @@
       "name": "admin-view-toggle",
       "source": "./plugins/admin-view-toggle",
       "description": "When building admin-only features, give admin users a frontend-only 一般/admin view switch that defaults to 一般, so one account can eyeball both UIs. The backend keeps authorizing as admin and never reads the toggle."
+    },
+    {
+      "name": "deno-min-dep-age",
+      "source": "./plugins/deno-min-dep-age",
+      "description": "When a Deno dependency update is blocked by minimumDependencyAge, exclude the self-published @kuboon scope via minimumDependencyAge.exclude (Deno 2.9+) instead of lowering the age or passing --min-dep-age 0."
     }
   ]
 }
