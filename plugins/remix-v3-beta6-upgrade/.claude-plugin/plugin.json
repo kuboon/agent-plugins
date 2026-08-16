@@ -1,0 +1,10 @@
+{
+  "name": "remix-v3-beta6-upgrade",
+  "description": "Upgrade a Remix v3 project from beta.5 to beta.6: the full @remix-run/* version table plus every breaking change (data-table adapters removed, browser resolveFrame options object, href/createHref options object, delimiter-bounded route params, HttpOnly session cookies, allowFiles/denyFiles, remix test).",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

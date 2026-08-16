@@ -17,5 +17,6 @@ dependencies:
     - kuboon/agent-plugins/plugins/remix-ui-text-field-editable/skills/remix-ui-text-field-editable
     - kuboon/agent-plugins/plugins/admin-view-toggle/skills/admin-view-toggle
     - kuboon/agent-plugins/plugins/deno-min-dep-age/skills/deno-min-dep-age
+    - kuboon/agent-plugins/plugins/remix-v3-beta6-upgrade/skills/remix-v3-beta6-upgrade
   mcp: []
 includes: auto
