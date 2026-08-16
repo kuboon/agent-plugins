@@ -32,6 +32,7 @@ claude plugin install uint8array-base64@agent-plugins
 claude plugin install remix-ui-text-field-editable@agent-plugins
 claude plugin install admin-view-toggle@agent-plugins
 claude plugin install deno-min-dep-age@agent-plugins
+claude plugin install remix-v3-beta6-upgrade@agent-plugins
 ```
 
 ## Plugins
@@ -113,3 +114,15 @@ Ships a skill with the error signature to recognize, the `jsr:@kuboon/*` scope
 wildcard, and the exclude-entry rules verified against Deno 2.9.4 (the `jsr:`/
 `npm:` prefix is mandatory, a version suffix is silently ignored, and exclusion
 does not cascade to transitive dependencies).
+
+### `remix-v3-beta6-upgrade`
+
+Upgrades a **Remix v3** project from `beta.5` to `beta.6`. Ships a skill with the
+full `@remix-run/*` version table (which packages moved, which deliberately did
+not) and a before/after diff for every breaking change — data-table dropping
+adapters for `create*Database()` and `DatabaseDriver`, the browser
+`resolveFrame(src, options)` signature, `href()`/`createHref()` taking an options
+object, delimiter-bounded route params that reject `/:year-:month`, session
+cookies defaulting to `HttpOnly`, `createAssetServer`'s `allowFiles`/`denyFiles`,
+and the removal of `remix-test`. Leads with the four that compile clean and fail
+silently, since those are the ones a bump quietly ships to production.
