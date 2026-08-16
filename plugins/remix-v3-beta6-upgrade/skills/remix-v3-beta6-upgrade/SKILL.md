@@ -370,6 +370,52 @@ synchronous loaders.
   browser runtime entry at `app/actions/public/entry.ts` and browser-reachable
   source in colocated `public/` directories.
 
+## Trap — `static-middleware` still excludes `fetch-router@0.21.0`
+
+`@remix-run/static-middleware@0.4.13` is the latest release at beta.6 and was
+deliberately *not* bumped — but it still declares
+`"@remix-run/fetch-router": "^0.20.1"`, and `^0.20.1` excludes `0.21.0`. The
+`remix` meta-package pins both, so any project using `staticFiles()` alongside
+`fetch-router@0.21.0` resolves **two copies** of fetch-router and gets:
+
+```
+TS2322: Type 'Middleware' is not assignable to type 'AnyMiddleware'.
+  Property '#private' in type 'RequestContext' refers to a different member
+  that cannot be accessed from within type 'RequestContext'.
+```
+
+`RequestContext` is branded with a private field, so the two `Middleware` types
+are nominally distinct even though they are structurally identical.
+
+**This is a type-level problem only.** static-middleware imports fetch-router
+with `import type` and never calls into it at runtime, so the duplicate is
+inert. Re-type the middleware at the one call site and leave a note to remove
+it:
+
+```ts
+import { createRouter, type Middleware } from '@remix-run/fetch-router'
+import { staticFiles } from '@remix-run/static-middleware'
+
+// static-middleware@0.4.13 pins fetch-router ^0.20.1, so Deno/npm resolve a
+// second copy and the Middleware types no longer overlap. Its fetch-router
+// import is type-only, so this is sound. Drop once upstream widens the range.
+const serveStatic = staticFiles(dir) as unknown as Middleware
+
+const router = createRouter({ middleware: [serveStatic] })
+```
+
+`as Middleware` alone is rejected ("neither type sufficiently overlaps") — the
+private-field brand forces the double cast.
+
+Do not try to fix this with npm `overrides`: **Deno ignores `overrides` in
+`package.json`**, even with `nodeModulesDir` enabled, so the duplicate survives.
+Deno's `links` (formerly `patch`) only redirects to local source trees, not to a
+different registry version.
+
+The same shape will appear for any middleware package left at a beta.5 version
+while its peers move — check the resolved tree, not just the manifest, when a
+`Middleware` assignment suddenly stops type-checking.
+
 ## New: HMR packages
 
 `@remix-run/ui-hmr@0.1.0` and `@remix-run/node-hmr@0.1.0` are new and purely
@@ -425,5 +471,7 @@ Order that avoids chasing type errors:
 - [ ] `createAssetServer` uses `allowFiles`/`denyFiles`.
 - [ ] `remix-test` invocations and `remix-test.config.*` migrated to `remix test`
       and `remix.json#test`.
+- [ ] No duplicate `fetch-router` in the resolved tree — or the `staticFiles()`
+      call site re-typed with a note.
 - [ ] `deno check` / `deno lint` / `deno fmt --check` / tests pass.
 - [ ] Frame navigation and form submission exercised in a real browser.
