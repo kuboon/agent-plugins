@@ -44,7 +44,7 @@ Exempt the scope you publish; keep the delay for everyone else.
 // deno.json
 {
   "minimumDependencyAge": {
-    "age": "P3D",
+    "age": "P1D",
     "exclude": ["jsr:@kuboon/*"]
   }
 }
@@ -59,6 +59,31 @@ Exempt the scope you publish; keep the delay for everyone else.
   the actual fix.
 
 Excluding a scope you control is scoped trust. Disabling the field is not.
+
+### Change `exclude`, not `age`
+
+`exclude` is the whole edit. When the project had no `minimumDependencyAge`
+before, it was running on Deno's built-in **24 hours** — so write `"age": "P1D"`
+to preserve exactly that. Adding the `exclude` you need while *also* lengthening
+the window is a second, unrelated behaviour change smuggled into the same diff,
+and it bites immediately:
+
+```
+error: Could not find npm package '@remix-run/fetch-router' matching '0.21.0'.
+A newer matching version was found, but it was not used because it was newer
+than the specified minimum dependency date of 2026-08-13 07:48:17 UTC.
+```
+
+That is `age: "P3D"` blocking a **third-party** package four days old. Anything
+on a fast release cadence — a framework in beta, a weekly-releasing library —
+lives inside a 3-day window most of the time, so `P3D` routinely blocks the very
+upgrade you sat down to do. The 24h default already covers the attack this
+feature exists for: freshly-published compromised versions are typically caught
+and yanked within hours.
+
+Only lengthen `age` when hardening the supply-chain posture is the actual task,
+as its own change, with the fallout on fast-moving dependencies understood.
+Never as a side effect of adding an exemption.
 
 ## Writing `exclude` entries
 
@@ -81,12 +106,13 @@ Verified against Deno 2.9.4:
 
 ## The `age` value
 
-Accepts an ISO-8601 duration (`P3D`, `PT72H`), a number of minutes (`120`), an
+Accepts an ISO-8601 duration (`P1D`, `PT72H`), a number of minutes (`120`), an
 absolute cutoff date (`2026-07-16`) or RFC3339 timestamp, or `0` to disable.
-`P3D` is a reasonable default: most malicious releases are caught and yanked
-within days.
+`P1D` matches Deno's built-in default and is the value to write when the project
+had no explicit setting — see [Change `exclude`, not `age`](#change-exclude-not-age)
+for why reaching past it costs more than it buys.
 
-The string form (`"minimumDependencyAge": "P3D"`) has no `exclude`; switching to
+The string form (`"minimumDependencyAge": "P1D"`) has no `exclude`; switching to
 the object form with `age` + `exclude` is exactly the edit to make when the first
 exemption is needed.
 
@@ -100,6 +126,8 @@ this in config rather than at the command line.
 - [ ] Blocked update diagnosed as `minimumDependencyAge`, not a bad version range.
 - [ ] `deno.json` uses the object form with `age` + `exclude`.
 - [ ] `exclude` has `jsr:@kuboon/*` (prefixed, wildcard, no version suffix).
-- [ ] Global `age` left intact for third-party dependencies — not `0`, not shortened.
+- [ ] Global `age` left intact for third-party dependencies — not `0`, not
+      shortened, and not *lengthened* either (`P1D` when there was no prior
+      setting; a longer window blocks fast-moving third-party releases).
 - [ ] Re-ran `deno install` / `deno outdated --update --latest` to confirm the
       version resolves.
