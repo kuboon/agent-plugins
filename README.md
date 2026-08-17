@@ -33,6 +33,7 @@ claude plugin install remix-ui-text-field-editable@agent-plugins
 claude plugin install admin-view-toggle@agent-plugins
 claude plugin install deno-min-dep-age@agent-plugins
 claude plugin install remix-v3-beta6-upgrade@agent-plugins
+claude plugin install remix-db-migrations-deno@agent-plugins
 ```
 
 ## Plugins
@@ -126,3 +127,15 @@ object, delimiter-bounded route params that reject `/:year-:month`, session
 cookies defaulting to `HttpOnly`, `createAssetServer`'s `allowFiles`/`denyFiles`,
 and the removal of `remix-test`. Leads with the four that compile clean and fail
 silently, since those are the ones a bump quietly ships to production.
+
+### `remix-db-migrations-deno`
+
+Runs **`@remix-run/data-table` migrations from Deno** with the Remix v3 CLI's
+`remix db` commands. Ships a skill with the `remix.json` `db` config, the
+`YYYYMMDDHHmmss_name/up.sql` + `down.sql` directory layout, `deno task` wiring
+via `node_modules/.bin`, a rollback script for the one direction the CLI cannot
+do, and the Deno-specific traps verified on Deno 2.9.4 — bare `npm:remix`
+resolving Remix **v2** (`Failed resolving binary export`), `node:sqlite` working
+with no extra dependency while Postgres/MySQL need `pg`/`mysql2` added by hand,
+the `--allow-sys` requirement, and the two different bases that relative paths
+resolve against.

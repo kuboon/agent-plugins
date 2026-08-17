@@ -52,6 +52,11 @@
       "name": "remix-v3-beta6-upgrade",
       "source": "./plugins/remix-v3-beta6-upgrade",
       "description": "Upgrade a Remix v3 project from beta.5 to beta.6: the full @remix-run/* version table plus every breaking change, including the ones the compiler will not catch."
+    },
+    {
+      "name": "remix-db-migrations-deno",
+      "source": "./plugins/remix-db-migrations-deno",
+      "description": "Run @remix-run/data-table migrations from Deno with the Remix v3 CLI: remix.json db config, timestamped up.sql/down.sql directories, deno task wiring, and the Deno-specific traps."
     }
   ]
 }
