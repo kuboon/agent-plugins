@@ -56,7 +56,7 @@
     {
       "name": "remix-db-migrations-deno",
       "source": "./plugins/remix-db-migrations-deno",
-      "description": "Run @remix-run/data-table migrations from Deno with the Remix v3 CLI: remix.json db config, timestamped up.sql/down.sql directories, deno task wiring, and the Deno-specific traps."
+      "description": "Run @remix-run/data-table migrations from Deno with the Remix v3 CLI: remix.json db config, timestamped up.sql/down.sql directories, deno task wiring, Turso/libSQL via a runRemixDb() entry point, and the Deno-specific traps."
     }
   ]
 }
