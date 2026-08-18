@@ -18,5 +18,6 @@ dependencies:
     - kuboon/agent-plugins/plugins/admin-view-toggle/skills/admin-view-toggle
     - kuboon/agent-plugins/plugins/deno-min-dep-age/skills/deno-min-dep-age
     - kuboon/agent-plugins/plugins/remix-v3-beta6-upgrade/skills/remix-v3-beta6-upgrade
+    - kuboon/kuboon-remix-utils/plugins/remix-db-migrations-deno/skills/remix-db-migrations-deno
   mcp: []
 includes: auto
