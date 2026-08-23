@@ -32,7 +32,7 @@ claude plugin install uint8array-base64@agent-plugins
 claude plugin install remix-ui-text-field-editable@agent-plugins
 claude plugin install admin-view-toggle@agent-plugins
 claude plugin install deno-min-dep-age@agent-plugins
-claude plugin install remix-v3-beta6-upgrade@agent-plugins
+claude plugin install remix-v3-upgrade@agent-plugins
 claude plugin install remix-db-migrations-deno@agent-plugins
 ```
 
@@ -116,17 +116,31 @@ wildcard, and the exclude-entry rules verified against Deno 2.9.4 (the `jsr:`/
 `npm:` prefix is mandatory, a version suffix is silently ignored, and exclusion
 does not cascade to transitive dependencies).
 
-### `remix-v3-beta6-upgrade`
+### `remix-v3-upgrade`
 
-Upgrades a **Remix v3** project from `beta.5` to `beta.6`. Ships a skill with the
-full `@remix-run/*` version table (which packages moved, which deliberately did
-not) and a before/after diff for every breaking change — data-table dropping
-adapters for `create*Database()` and `DatabaseDriver`, the browser
+Upgrades a **Remix v3** project across beta boundaries — currently up to
+`3.0.0-beta.10`. Ships a skill with the `@remix-run/*` version table for each hop
+and a before/after diff for every breaking change.
+
+Which release to land on is itself a trap: `beta.7` and `beta.8` were never
+published, and **`beta.9` cannot install** — it pins a renamed
+`@remix-run/static-files-middleware@^0.1.0` that only exists as a `0.0.0`
+placeholder. Go `beta.6` → `beta.10`.
+
+`beta.6` → `beta.10` moves only three packages: `static-middleware@0.4.14`
+finally widens its `fetch-router` range, so the `as unknown as Middleware` cast
+on `staticFiles()` (and any package-manager override) can be deleted — verified
+both ways with `deno check`; and `ui@0.7.0` gives `run()` a **default frame
+resolver**, which means every `run()` call now intercepts same-origin link and
+form navigation, even in apps that never passed a resolver.
+
+The `beta.5` → `beta.6` section is the large one: data-table dropping adapters
+for `create*Database()` and `DatabaseDriver`, the browser
 `resolveFrame(src, options)` signature, `href()`/`createHref()` taking an options
 object, delimiter-bounded route params that reject `/:year-:month`, session
 cookies defaulting to `HttpOnly`, `createAssetServer`'s `allowFiles`/`denyFiles`,
-and the removal of `remix-test`. Leads with the four that compile clean and fail
-silently, since those are the ones a bump quietly ships to production.
+and the removal of `remix-test`. It leads with the four that compile clean and
+fail silently, since those are the ones a bump quietly ships to production.
 
 ### `remix-db-migrations-deno`
 
