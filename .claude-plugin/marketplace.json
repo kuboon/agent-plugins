@@ -49,9 +49,9 @@
       "description": "When a Deno dependency update is blocked by minimumDependencyAge, exclude the self-published @kuboon scope via minimumDependencyAge.exclude (Deno 2.9+) instead of lowering the age or passing --min-dep-age 0."
     },
     {
-      "name": "remix-v3-beta6-upgrade",
-      "source": "./plugins/remix-v3-beta6-upgrade",
-      "description": "Upgrade a Remix v3 project from beta.5 to beta.6: the full @remix-run/* version table plus every breaking change, including the ones the compiler will not catch."
+      "name": "remix-v3-upgrade",
+      "source": "./plugins/remix-v3-upgrade",
+      "description": "Upgrade a Remix v3 project across beta boundaries, currently up to 3.0.0-beta.10: the @remix-run/* version table for each hop plus every breaking change, including the ones the compiler will not catch."
     },
     {
       "name": "remix-db-migrations-deno",
