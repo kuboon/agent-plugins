@@ -1,7 +1,7 @@
 {
   "name": "remix-v3-upgrade",
-  "description": "Upgrade a Remix v3 project across beta boundaries, currently up to 3.0.0-beta.10: the @remix-run/* version table for each hop plus every breaking change, including the ones the compiler will not catch. beta.7/8 were never published and beta.9 cannot install.",
-  "version": "0.2.0",
+  "description": "Upgrade a Remix v3 project across beta and rc boundaries, currently up to 3.0.0-rc.1: the @remix-run/* version table for each hop plus every breaking change, including the ones the compiler will not catch — such as ui@0.8.0 renaming every rmx-* DOM attribute to data-rmx-*. beta.7/8 were never published and beta.9 cannot install.",
+  "version": "0.3.0",
   "author": {
     "name": "Ohkubo KOHEI",
     "email": "kuboon@gmail.com"

@@ -118,14 +118,24 @@ does not cascade to transitive dependencies).
 
 ### `remix-v3-upgrade`
 
-Upgrades a **Remix v3** project across beta boundaries — currently up to
-`3.0.0-beta.10`. Ships a skill with the `@remix-run/*` version table for each hop
+Upgrades a **Remix v3** project across beta and rc boundaries — currently up to
+`3.0.0-rc.1`. Ships a skill with the `@remix-run/*` version table for each hop
 and a before/after diff for every breaking change.
 
 Which release to land on is itself a trap: `beta.7` and `beta.8` were never
 published, and **`beta.9` cannot install** — it pins a renamed
 `@remix-run/static-files-middleware@^0.1.0` that only exists as a `0.0.0`
-placeholder. Go `beta.6` → `beta.10`.
+placeholder. Go `beta.6` → `beta.10` → `rc.1`.
+
+`beta.10` → `rc.1` moves ten packages, and one of them breaks silently:
+`ui@0.8.0` renames **every** `rmx-*` DOM attribute to `data-rmx-*`
+(`rmx-document`, `rmx-target`, `rmx-src`, `rmx-history`, `rmx-reset-scroll`,
+`rmx-preserve-dom`, plus `data-key` → `data-rmx-key`) with no alias and no
+warning. TypeScript does not check hyphenated JSX attribute names, so the old
+spelling still compiles and still renders — the only symptom is behavioral, such
+as a nav link changing the URL without changing the view. The skill carries the
+rename table, the grep that finds them, and the `addEventListeners` removal that
+lands in the same bump.
 
 `beta.6` → `beta.10` moves only three packages: `static-middleware@0.4.14`
 finally widens its `fetch-router` range, so the `as unknown as Middleware` cast
