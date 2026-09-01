@@ -1,14 +1,20 @@
 ---
 name: remix-v3-upgrade
 description: >-
-  Upgrade a Remix v3 project across beta boundaries — currently up to
-  `remix@3.0.0-beta.10`. Use this skill whenever bumping any `@remix-run/*`
-  dependency, or when code that worked on an earlier beta now fails:
-  `No matching version found for @remix-run/static-files-middleware@^0.1.0`
-  (that is beta.9, which cannot install), `Type 'Middleware' is not assignable
-  to type 'AnyMiddleware'` from `staticFiles()`, links or forms suddenly
-  navigating through frames instead of the document, `createDatabase` /
-  `DatabaseAdapter` / `createSqliteDatabaseAdapter` no longer exported from
+  Upgrade a Remix v3 project across beta and rc boundaries — currently up to
+  `remix@3.0.0-rc.1`. Use this skill whenever bumping any `@remix-run/*`
+  dependency, or when code that worked on an earlier release now misbehaves:
+  a nav link changing the URL without changing the view, `rmx-document` /
+  `rmx-target` / `rmx-src` / `rmx-history` / `rmx-reset-scroll` /
+  `rmx-preserve-dom` / `data-key` silently doing nothing (they became
+  `data-rmx-*` in `@remix-run/ui@0.8.0`), a custom element losing its state on
+  every frame reload, `addEventListeners` no longer exported from
+  `@remix-run/ui`, `No matching version found for
+  @remix-run/static-files-middleware@^0.1.0` (that is beta.9, which cannot
+  install), `Type 'Middleware' is not assignable to type 'AnyMiddleware'` from
+  `staticFiles()`, links or forms suddenly navigating through frames instead of
+  the document, `createDatabase` / `DatabaseAdapter` /
+  `createSqliteDatabaseAdapter` no longer exported from
   `@remix-run/data-table`, `resolveFrame` receiving `undefined` for its signal
   or target, `Route.href(params, searchParams)` / `createHref(pattern, params,
   searchParams)` losing its query string, a `ParseError` on a route pattern like
@@ -27,7 +33,7 @@ that look like your bug rather than a version skew.
 
 ## Which release to target
 
-**`remix@3.0.0-beta.10`** is the current `next` tag and the release to land on.
+**`remix@3.0.0-rc.1`** is the current `next` tag and the release to land on.
 
 The ladder has holes, so do not walk it one number at a time:
 
@@ -38,6 +44,7 @@ The ladder has holes, so do not walk it one number at a time:
 | `3.0.0-beta.8` | **never published** — `npm view` 404s |
 | `3.0.0-beta.9` | published but **uninstallable** (see below) |
 | `3.0.0-beta.10` | published, installs clean |
+| `3.0.0-rc.1` | published, installs clean — current `next` |
 
 beta.9 pins `@remix-run/static-files-middleware@^0.1.0`, a renamed package that
 was never released — npm has only a `0.0.0` placeholder and the repo has no such
@@ -51,9 +58,153 @@ npm error notarget No matching version found for @remix-run/static-files-middlew
 beta.10 reverts that rename and stays on the established
 `@remix-run/static-middleware`. **Skip beta.9 entirely**; go beta.6 → beta.10.
 
-Two sections follow: [beta.6 → beta.10](#beta6--beta10) is a small, mostly
-additive hop. [beta.5 → beta.6](#beta5--beta6) is the large one — do it first if
-the project is still on beta.5.
+Three sections follow, newest boundary first. Work backwards to wherever the
+project sits, then apply them in order: [beta.5 → beta.6](#beta5--beta6) is the
+large one, [beta.6 → beta.10](#beta6--beta10) is small and mostly additive, and
+[beta.10 → rc.1](#beta10--rc1) is small but contains a **silent** DOM-attribute
+rename that neither the compiler nor the runtime will report.
+
+## beta.10 → rc.1
+
+Ten of the 47 packages the meta-package pins move; the other 37 are
+byte-identical to beta.10.
+
+| Package | beta.10 | rc.1 | |
+| --- | --- | --- | --- |
+| **`@remix-run/ui`** | 0.7.0 | **0.8.0** | **renames every `rmx-*` DOM attribute — silent** |
+| **`@remix-run/auth`** | 0.2.7 | **0.3.0** | Atmosphere provider and DPoP types removed/renamed |
+| **`@remix-run/assets`** | 0.5.0 | **0.6.0** | `getInjectedPackageRouteConfigs` renamed |
+| `@remix-run/render-middleware` | 0.1.5 | 0.2.0 | additive — adds `render`, `RenderFunction`, `RenderOptions` |
+| `@remix-run/data-table` | 0.4.0 | 0.5.0 | additive — adds the `rollback` migration command |
+| `@remix-run/data-table-sqlite` | 0.6.0 | 0.6.1 | dependency bump |
+| `@remix-run/data-table-mysql` | 0.5.0 | 0.5.1 | dependency bump |
+| `@remix-run/data-table-postgres` | 0.5.0 | 0.5.1 | dependency bump |
+| `@remix-run/cli` | 0.5.0 | 0.6.0 | template only — nothing to migrate |
+| `@remix-run/spa` | — | 0.1.0 (new) | opt-in, pairs with `spaResponse()` in `ui` |
+
+Only the first three carry work. The `ui` one is the dangerous one and is why
+this section exists.
+
+### Breaking change — every `rmx-*` attribute is now `data-rmx-*`
+
+`@remix-run/ui@0.8.0` moved its DOM attributes into the `data-` namespace.
+There is **no alias, no fallback, and no deprecation warning**: the runtime
+reads only the new names and ignores the old ones like any other unknown
+attribute.
+
+| Before (≤ 0.7.0) | After (0.8.0) | What breaks if you miss it |
+| --- | --- | --- |
+| `rmx-document` | `data-rmx-document` | the opt-out stops working — the link or form is intercepted and navigates through a frame |
+| `rmx-target` | `data-rmx-target` | navigation falls back to the top frame |
+| `rmx-src` | `data-rmx-src` | the frame loads the link's `href` instead of the named source |
+| `rmx-history` | `data-rmx-history` | `push`/`replace` override is ignored |
+| `rmx-reset-scroll` | `data-rmx-reset-scroll` | scroll is reset even where you suppressed it |
+| `rmx-preserve-dom` | `data-rmx-preserve-dom` | the reconciler clobbers client-owned subtrees (custom elements, third-party widgets) on reload |
+| `data-key` | `data-rmx-key` | keyed reconciliation silently degrades to positional matching |
+
+Unchanged, do **not** rewrite them: the `rmx-reset` CSS layer name and the
+`<script id="rmx-data">` hydration payload id. `data-rmx-key`,
+`data-rmx-style` and `data-rmx-module-preload` are the only new spellings you
+write by hand or match in selectors; the last two are emitted by the server
+renderer.
+
+**Nothing tells you.** TypeScript does not type-check JSX attribute names that
+contain a hyphen, so the old spelling compiles exactly as cleanly as the new
+one — verified against `ui@0.8.0` with `strict: true`:
+
+```tsx
+const old = <a href="/x" rmx-document="">old</a>        // no error
+const neu = <a href="/x" data-rmx-document="">new</a>   // no error
+const junk = <a href="/x" totally-made-up="">junk</a>   // no error
+const typo = <a hrefTypo={1} />                         // TS2322 — camelCase is checked
+```
+
+The build stays green, the page renders, and the only symptom is behavioral:
+the URL changes but the view does not, a document download is swallowed by a
+frame, or a custom element loses its state on every reload. Exercise link, form
+and frame navigation in a real browser after this bump — no unit test will
+catch it.
+
+Find every occurrence with a word-boundary grep that will not also match the
+already-migrated names:
+
+```bash
+grep -rnE '(^|[^-a-z])rmx-(document|target|src|history|reset-scroll|preserve-dom)\b' \
+  --include='*.tsx' --include='*.ts' --include='*.html' .
+grep -rn 'data-key' --include='*.tsx' --include='*.ts' --include='*.html' .
+```
+
+The rewrite itself is mechanical:
+
+```diff
+- <a href="/download" rmx-document>…</a>
+- <a href="/panel" rmx-target="side" rmx-history="replace">…</a>
+- <div rmx-preserve-dom><my-widget /></div>
++ <a href="/download" data-rmx-document>…</a>
++ <a href="/panel" data-rmx-target="side" data-rmx-history="replace">…</a>
++ <div data-rmx-preserve-dom><my-widget /></div>
+```
+
+Two upsides once you are on the new names. `data-rmx-document` is now *typed*
+on anchor and form props (0.7.0 typed the other five but not that one), so a
+misspelling of the `data-rmx-*` prefix on an element whose props declare it is
+caught. And `link(href, { target, src, history, resetScroll })` emits the
+`data-` names itself — prefer it over hand-written attributes and the rename
+becomes a non-event.
+
+### Breaking change — `addEventListeners` is gone from `ui`
+
+`@remix-run/ui@0.8.0` deletes the `addEventListeners` helper and its module.
+This one the compiler *does* catch (`has no exported member
+'addEventListeners'`). Use the platform's own signal-scoped listeners:
+
+```diff
+- addEventListeners(target, handle.signal, {
+-   pointerdown(event) { … },
+-   pointerup(event) { … },
+- })
++ target.addEventListener('pointerdown', (event) => { … }, { signal: handle.signal })
++ target.addEventListener('pointerup', (event) => { … }, { signal: handle.signal })
+```
+
+`{ signal }` covers teardown, which is what most call sites used it for. The
+one thing that does not survive is the *re-entry* abort: a listener declared
+with a second parameter received a per-dispatch `AbortSignal` that was aborted
+when the same event fired again. If a call site used it — an async drag or
+animation handler that must cancel its predecessor — hold your own
+`AbortController` and abort it at the top of the handler. Inside components the
+`on()` mixin is unchanged and remains the idiomatic choice.
+
+### `auth@0.3.0` and `assets@0.6.0`
+
+Only relevant if the app imports them directly; both are compiler-caught
+renames.
+
+`@remix-run/auth` drops the whole Atmosphere provider
+(`createAtmosphereAuthProvider`, `AtmosphereAuthProvider`,
+`AtmosphereAuthProfile`, `AtmosphereOAuthTokens`,
+`AtmosphereAuthorizationServerMetadata`, `AtmosphereClientAuthentication`,
+`AtmosphereTokenAuthorizationServer`, `AtmosphereAuthProviderOptions`,
+`AtmosphereAuthProviderMapProfileInput`) and reshapes the token model:
+`OAuthStandardTokens` / `OAuthDpopTokens` / `OAuthDpopBinding` are gone, a new
+`OAuthTransaction` type appears, `mergeRefreshedStandardTokens` is now
+`mergeRefreshedTokens`, and the value export `oauthProviderRuntime` becomes the
+type `OAuthProviderRuntime`.
+
+`@remix-run/assets` renames `getInjectedPackageRouteConfigs` to
+`getInjectedPackageRoots` and adds an inspector surface
+(`createAssetInspector`, `getInjectedPackageMountConfigs`, `AssetDetails`,
+`AssetKind`, `AssetStatus`, `AssetAccessRule`, `AssetAccessDetails`).
+
+The version table and these symbol lists were diffed from the published
+packages. The additive-only packages were checked at the level of exported
+signatures, not behavior — read their changelogs if the app leans on them.
+
+### New: `@remix-run/spa`
+
+`@remix-run/spa@0.1.0` is new and opt-in, paired with `spaResponse()` and
+`getSpaResponseData()` in `ui@0.8.0`. Nothing to migrate — skip unless you want
+a client-rendered shell.
 
 ## beta.6 → beta.10
 
@@ -125,6 +276,10 @@ never asked for. If a link or form must stay a document navigation, mark it:
 ```html
 <a href="/download" rmx-document>…</a>
 ```
+
+On rc.1 that attribute is spelled `data-rmx-document`; see
+[beta.10 → rc.1](#beta10--rc1). If you are landing on rc.1 anyway, write the
+`data-` name now and skip the intermediate spelling.
 
 Nothing here fails to compile, so exercise link and form navigation in a real
 browser after the bump.
@@ -289,7 +444,8 @@ Additive, but worth knowing while you are in this code:
 - Same-origin **forms progressively enhance into frame navigations** whenever
   `run({ resolveFrame })` is configured. Native constraint validation runs
   first; submissions target the top frame unless `rmx-target` names one;
-  `rmx-document` opts back into a document navigation. For non-GET submissions
+  `rmx-document` opts back into a document navigation (both gain a `data-`
+  prefix in `ui@0.8.0` — see [beta.10 → rc.1](#beta10--rc1)). For non-GET submissions
   the resolver receives the browser's native `FormData` plus `method` and
   `encType`, and stays responsible for encoding the request and any `_method`
   convention. If the app already hand-wires form submission, check for
@@ -299,6 +455,8 @@ Additive, but worth knowing while you are in this code:
 - `rmx-preserve-dom` tells the reconciler to keep a matching element's current
   attributes and children across reloads — the escape hatch for custom elements
   and other client-owned subtrees.
+- Both attributes are `data-rmx-history` and `data-rmx-preserve-dom` from
+  `ui@0.8.0` (rc.1) on.
 - `run()` returns `frames` on the app object, mirroring `handle.frames`.
 - New `@remix-run/ui/dev/refresh` entry point for tooling that reconciles
   mounted roots after component modules change.
@@ -570,14 +728,14 @@ also pull unrelated majors — read its plan before accepting. If Deno refuses a
 version with "newer than the specified minimum dependency date", that is
 `minimumDependencyAge`, not a bad range; see the `deno-min-dep-age` skill.
 
-Pin the meta-package to an explicit release (`npm:remix@3.0.0-beta.10`). A bare
+Pin the meta-package to an explicit release (`npm:remix@3.0.0-rc.1`). A bare
 `npm:remix` resolves `latest`, which is **Remix v2** — v3 lives on the `next`
 tag.
 
 Order that avoids chasing type errors:
 
 1. Bump every `@remix-run/*` range in one pass, lockfile included. Land on
-   beta.10; never stop at beta.9, which cannot resolve.
+   rc.1; never stop at beta.9, which cannot resolve.
 2. Fix the data-table construction sites first — they are the loudest.
 3. Then the browser `resolveFrame` signature, which the compiler will *not*
    flag.
@@ -586,22 +744,36 @@ Order that avoids chasing type errors:
    cookie `encode`/`decode`, and route patterns with two params in a segment.
 5. Delete the `staticFiles()` cast and any `fetch-router` override once on
    beta.10.
-6. Type-check, lint, test, and exercise link, form, and frame navigation in a
-   browser — the `resolveFrame` change, the form enhancement, and beta.10's
-   default resolver do not show up in unit tests.
+6. Rename every `rmx-*` attribute to `data-rmx-*` (and `data-key` to
+   `data-rmx-key`) for rc.1. Grep for them — nothing else will find them.
+7. Type-check, lint, test, and exercise link, form, and frame navigation in a
+   browser — the `resolveFrame` change, the form enhancement, beta.10's default
+   resolver, and the rc.1 attribute rename do not show up in unit tests.
 
 ## Checklist
 
-### Landing on beta.10
+### Landing on rc.1
 
-- [ ] `remix` pinned to `3.0.0-beta.10` explicitly — not bare `npm:remix`
+- [ ] `remix` pinned to `3.0.0-rc.1` explicitly — not bare `npm:remix`
       (that is v2), and not beta.9 (uninstallable).
+- [ ] No bare `rmx-document` / `rmx-target` / `rmx-src` / `rmx-history` /
+      `rmx-reset-scroll` / `rmx-preserve-dom` left anywhere — the grep in
+      [beta.10 → rc.1](#beta10--rc1) returns nothing — and `data-key` renamed
+      to `data-rmx-key`. Neither the compiler nor the runtime reports these.
+- [ ] `addEventListeners` call sites converted to
+      `addEventListener(..., { signal })`, with an explicit `AbortController`
+      wherever the old per-dispatch re-entry signal was used.
+- [ ] Direct `@remix-run/auth` / `@remix-run/assets` imports updated for their
+      renamed exports.
+
+### Landing on beta.10
 - [ ] `static-middleware` at 0.4.14, the `as unknown as Middleware` cast
       deleted, and any `overrides`/`resolutions` pin on `fetch-router` removed.
 - [ ] `resolveFrame` either deleted (if it only fetched HTML) or kept
       deliberately for custom headers/encoding/error UI.
-- [ ] Links and forms that must stay document navigations marked `rmx-document`,
-      and navigation exercised in a real browser.
+- [ ] Links and forms that must stay document navigations marked
+      `rmx-document` — `data-rmx-document` if you are going on to rc.1 — and
+      navigation exercised in a real browser.
 
 ### From beta.5
 
