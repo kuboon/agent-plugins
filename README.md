@@ -184,10 +184,16 @@ engine-neutral techniques that pair with whatever tween, particle, and camera
 APIs the detected engine provides. It adds polish on top of a mechanic that
 already works; it does not implement the mechanic.
 
-> Not written here. Linked from
-> [`gamedev-skills/awesome-gamedev-agent-skills`](https://github.com/gamedev-skills/awesome-gamedev-agent-skills/blob/main/skills/disciplines/game-feel/SKILL.md)
-> (Apache-2.0, © Abhishek Barali and contributors), a 68-skill game-dev
-> collection. The marketplace entry points at that repo with a `skills` selector
-> so only this one skill is installed, and `apm.yml` depends on the same
-> subdirectory. Nothing is vendored — upstream stays the single source of truth,
-> and the bundled `references/feedback-recipes.md` comes along with it.
+> **Not written here.** Redistributed verbatim from
+> [`gamedev-skills/awesome-gamedev-agent-skills`](https://github.com/gamedev-skills/awesome-gamedev-agent-skills/tree/main/skills/disciplines/game-feel)
+> under the **Apache License 2.0** — copyright 2026 Abhishek Barali and the
+> awesome-gamedev-agent-skills contributors. The upstream `LICENSE` and `NOTICE`
+> ship alongside the copy in
+> [`plugins/game-feel/`](plugins/game-feel/), and
+> [`PROVENANCE.md`](plugins/game-feel/PROVENANCE.md) records the exact upstream
+> commit, confirms the copy is unmodified, and gives the re-copy procedure.
+>
+> Copied rather than linked so the content is pinned and reviewable: a skill is
+> instructions loaded into the model's context, so tracking a third-party
+> default branch would let upstream edits reach it without review. Note that this
+> one plugin is Apache-2.0, while the rest of this repository is MIT.

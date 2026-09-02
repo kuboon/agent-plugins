@@ -1,0 +1,10 @@
+{
+  "name": "game-feel",
+  "description": "Add game feel / juice — screen shake, hit-stop, easing, squash & stretch, knockback, layered feedback — as engine-neutral techniques. Vendored verbatim from gamedev-skills/awesome-gamedev-agent-skills under Apache-2.0.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Abhishek Barali and the awesome-gamedev-agent-skills contributors"
+  },
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/gamedev-skills/awesome-gamedev-agent-skills"
+}
