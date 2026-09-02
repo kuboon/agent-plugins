@@ -19,5 +19,6 @@ dependencies:
     - kuboon/agent-plugins/plugins/deno-min-dep-age/skills/deno-min-dep-age
     - kuboon/agent-plugins/plugins/remix-v3-upgrade/skills/remix-v3-upgrade
     - kuboon/kuboon-remix-utils/plugins/remix-db-migrations-deno/skills/remix-db-migrations-deno
+    - gamedev-skills/awesome-gamedev-agent-skills/skills/disciplines/game-feel
   mcp: []
 includes: auto

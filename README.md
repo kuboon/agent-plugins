@@ -34,6 +34,7 @@ claude plugin install admin-view-toggle@agent-plugins
 claude plugin install deno-min-dep-age@agent-plugins
 claude plugin install remix-v3-upgrade@agent-plugins
 claude plugin install remix-db-migrations-deno@agent-plugins
+claude plugin install game-feel@agent-plugins
 ```
 
 ## Plugins
@@ -174,3 +175,19 @@ that CLI has no flag for.
 > so the skill stays next to the Turso package it documents — the marketplace
 > entry points into that monorepo via a `git-subdir` source, and `apm.yml`
 > depends on the same path.
+
+### `game-feel`
+
+Adds **game feel / "juice"** — screen shake, hit-stop/freeze frames, eased motion,
+squash & stretch, knockback, and layered audio-visual feedback — as
+engine-neutral techniques that pair with whatever tween, particle, and camera
+APIs the detected engine provides. It adds polish on top of a mechanic that
+already works; it does not implement the mechanic.
+
+> Not written here. Linked from
+> [`gamedev-skills/awesome-gamedev-agent-skills`](https://github.com/gamedev-skills/awesome-gamedev-agent-skills/blob/main/skills/disciplines/game-feel/SKILL.md)
+> (Apache-2.0, © Abhishek Barali and contributors), a 68-skill game-dev
+> collection. The marketplace entry points at that repo with a `skills` selector
+> so only this one skill is installed, and `apm.yml` depends on the same
+> subdirectory. Nothing is vendored — upstream stays the single source of truth,
+> and the bundled `references/feedback-recipes.md` comes along with it.
