@@ -34,6 +34,7 @@ claude plugin install admin-view-toggle@agent-plugins
 claude plugin install deno-min-dep-age@agent-plugins
 claude plugin install remix-v3-upgrade@agent-plugins
 claude plugin install remix-db-migrations-deno@agent-plugins
+claude plugin install game-feel@agent-plugins
 ```
 
 ## Plugins
@@ -174,3 +175,26 @@ that CLI has no flag for.
 > so the skill stays next to the Turso package it documents — the marketplace
 > entry points into that monorepo via a `git-subdir` source, and `apm.yml`
 > depends on the same path.
+
+### `game-feel`
+
+Adds **game feel / "juice"** — screen shake, hit-stop/freeze frames, eased motion,
+squash & stretch, knockback, and layered audio-visual feedback — as
+engine-neutral techniques that pair with whatever tween, particle, and camera
+APIs the detected engine provides. It adds polish on top of a mechanic that
+already works; it does not implement the mechanic.
+
+> **Not written here.** Redistributed from
+> [`gamedev-skills/awesome-gamedev-agent-skills`](https://github.com/gamedev-skills/awesome-gamedev-agent-skills/tree/main/skills/disciplines/game-feel)
+> under the **Apache License 2.0** — copyright 2026 Abhishek Barali and the
+> awesome-gamedev-agent-skills contributors. The upstream `LICENSE` and `NOTICE`
+> ship alongside the copy in
+> [`plugins/game-feel/`](plugins/game-feel/), and
+> [`PROVENANCE.md`](plugins/game-feel/PROVENANCE.md) records the exact upstream
+> commit, the one local modification (the dead `Related skills` section was
+> dropped), and the re-copy procedure.
+>
+> Copied rather than linked so the content is pinned and reviewable: a skill is
+> instructions loaded into the model's context, so tracking a third-party
+> default branch would let upstream edits reach it without review. Note that this
+> one plugin is Apache-2.0, while the rest of this repository is MIT.
