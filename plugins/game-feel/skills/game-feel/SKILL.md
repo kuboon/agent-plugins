@@ -9,6 +9,10 @@ description: >
   frames, or feedback/polish on hits, jumps, pickups, and deaths.
 ---
 
+<!-- Modified from the upstream original: the trailing "Related skills" section was
+     removed, as it pointed at sibling skills of the upstream collection that are not
+     distributed here. No other change. See ../../PROVENANCE.md. -->
+
 # Game feel (juice)
 
 The difference between a mechanic that *works* and one that feels *good* is feedback: the
@@ -155,11 +159,3 @@ func feedback(event_pos: Vector2, tier: String) -> void:
 - For the trauma-shake math, easing-curve cheat sheet (which ease for pop vs settle), knockback
   + flash + number-pop recipes, importance-tier presets, and per-engine tween/particle bindings,
   read `references/feedback-recipes.md`.
-
-## Related skills
-
-- `camera-systems` — owns camera follow/deadzone/orbit; this skill only feeds it shake trauma.
-- `godot-animation`, `unity-animation` — concrete tween/AnimationPlayer/particle APIs juice rides on.
-- `audio-design` — the sound layer of every feedback bundle; ducking and SFX variation.
-- `physics-tuning` — knockback forces and the timestep juice must not destabilize.
-- `platformer`, `fps-shooter`, `roguelike` — genres whose moment-to-moment feel this elevates.

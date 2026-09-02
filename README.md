@@ -184,14 +184,15 @@ engine-neutral techniques that pair with whatever tween, particle, and camera
 APIs the detected engine provides. It adds polish on top of a mechanic that
 already works; it does not implement the mechanic.
 
-> **Not written here.** Redistributed verbatim from
+> **Not written here.** Redistributed from
 > [`gamedev-skills/awesome-gamedev-agent-skills`](https://github.com/gamedev-skills/awesome-gamedev-agent-skills/tree/main/skills/disciplines/game-feel)
 > under the **Apache License 2.0** — copyright 2026 Abhishek Barali and the
 > awesome-gamedev-agent-skills contributors. The upstream `LICENSE` and `NOTICE`
 > ship alongside the copy in
 > [`plugins/game-feel/`](plugins/game-feel/), and
 > [`PROVENANCE.md`](plugins/game-feel/PROVENANCE.md) records the exact upstream
-> commit, confirms the copy is unmodified, and gives the re-copy procedure.
+> commit, the one local modification (the dead `Related skills` section was
+> dropped), and the re-copy procedure.
 >
 > Copied rather than linked so the content is pinned and reviewable: a skill is
 > instructions loaded into the model's context, so tracking a third-party
