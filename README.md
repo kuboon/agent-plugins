@@ -34,6 +34,7 @@ claude plugin install admin-view-toggle@agent-plugins
 claude plugin install deno-min-dep-age@agent-plugins
 claude plugin install remix-v3-upgrade@agent-plugins
 claude plugin install remix-db-migrations-deno@agent-plugins
+claude plugin install stacked-prs@agent-plugins
 claude plugin install game-feel@agent-plugins
 ```
 
@@ -175,6 +176,17 @@ that CLI has no flag for.
 > so the skill stays next to the Turso package it documents — the marketplace
 > entry points into that monorepo via a `git-subdir` source, and `apm.yml`
 > depends on the same path.
+
+### `stacked-prs`
+
+When a PR is open and there is more work to do, **stacks the next PR on that
+branch** instead of waiting for the merge or restarting from `main`. Ships a
+skill with the layering rule (a dependency must live in the same branch or a
+lower one), the plain-git form and the `gh stack` command table, and the merge
+semantics that matter: PRs merge bottom-up, merging the top brings everything
+below with it, merging mid-stack auto-retargets the layers above, branch
+protection and CI run on **every** layer, and a draft cannot merge as part of a
+stack.
 
 ### `game-feel`
 

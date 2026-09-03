@@ -63,6 +63,11 @@
       "description": "Run @remix-run/data-table migrations from Deno: remix.json db config, timestamped up.sql/down.sql directories, deno task wiring, the Deno-specific traps, and — for Turso/libSQL, which remix db cannot drive — the CLI shipped by @kuboon/remix-data-table-sqlite-turso."
     },
     {
+      "name": "stacked-prs",
+      "source": "./plugins/stacked-prs",
+      "description": "When a PR is open and there is more work to do, stack the next PR on its branch instead of waiting for the merge or restarting from main: the layering rule, gh stack commands, and bottom-up merge semantics."
+    },
+    {
       "name": "game-feel",
       "source": "./plugins/game-feel",
       "description": "Add game feel / juice — screen shake, hit-stop, easing, squash & stretch, knockback, layered feedback — as engine-neutral techniques. Vendored from gamedev-skills/awesome-gamedev-agent-skills under Apache-2.0."
