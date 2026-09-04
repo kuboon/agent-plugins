@@ -1,0 +1,10 @@
+{
+  "name": "stacked-prs",
+  "description": "When a PR is open and there is more work to do, stack the next PR on its branch instead of waiting for the merge or restarting from main. Covers the layering rule, gh stack commands, and bottom-up merge semantics.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}
