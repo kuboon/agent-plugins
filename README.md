@@ -121,13 +121,13 @@ does not cascade to transitive dependencies).
 ### `remix-v3-upgrade`
 
 Upgrades a **Remix v3** project across beta and rc boundaries — currently up to
-`3.0.0-rc.1`. Ships a skill with the `@remix-run/*` version table for each hop
+`3.0.0-rc.2`. Ships a skill with the `@remix-run/*` version table for each hop
 and a before/after diff for every breaking change.
 
 Which release to land on is itself a trap: `beta.7` and `beta.8` were never
 published, and **`beta.9` cannot install** — it pins a renamed
 `@remix-run/static-files-middleware@^0.1.0` that only exists as a `0.0.0`
-placeholder. Go `beta.6` → `beta.10` → `rc.1`.
+placeholder. Go `beta.6` → `beta.10` → `rc.1` → `rc.2`.
 
 `beta.10` → `rc.1` moves ten packages, and one of them breaks silently:
 `ui@0.8.0` renames **every** `rmx-*` DOM attribute to `data-rmx-*`
