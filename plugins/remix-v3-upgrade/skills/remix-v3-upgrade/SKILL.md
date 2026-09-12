@@ -2,8 +2,11 @@
 name: remix-v3-upgrade
 description: >-
   Upgrade a Remix v3 project across beta and rc boundaries — currently up to
-  `remix@3.0.0-rc.1`. Use this skill whenever bumping any `@remix-run/*`
+  `remix@3.0.0-rc.2`. Use this skill whenever bumping any `@remix-run/*`
   dependency, or when code that worked on an earlier release now misbehaves:
+  `Property 'getScriptEntry' is missing` from `render({ assets })`, a `405`
+  where a route used to fall through to the 404 handler, two copies of
+  `@remix-run/ui` in a lockfile after an additive bump,
   a nav link changing the URL without changing the view, `rmx-document` /
   `rmx-target` / `rmx-src` / `rmx-history` / `rmx-reset-scroll` /
   `rmx-preserve-dom` / `data-key` silently doing nothing (they became
@@ -33,7 +36,7 @@ that look like your bug rather than a version skew.
 
 ## Which release to target
 
-**`remix@3.0.0-rc.1`** is the current `next` tag and the release to land on.
+**`remix@3.0.0-rc.2`** is the current `next` tag and the release to land on.
 
 The ladder has holes, so do not walk it one number at a time:
 
@@ -44,7 +47,8 @@ The ladder has holes, so do not walk it one number at a time:
 | `3.0.0-beta.8` | **never published** — `npm view` 404s |
 | `3.0.0-beta.9` | published but **uninstallable** (see below) |
 | `3.0.0-beta.10` | published, installs clean |
-| `3.0.0-rc.1` | published, installs clean — current `next` |
+| `3.0.0-rc.1` | published, installs clean |
+| `3.0.0-rc.2` | published, installs clean — current `next` |
 
 beta.9 pins `@remix-run/static-files-middleware@^0.1.0`, a renamed package that
 was never released — npm has only a `0.0.0` placeholder and the repo has no such
@@ -58,11 +62,109 @@ npm error notarget No matching version found for @remix-run/static-files-middlew
 beta.10 reverts that rename and stays on the established
 `@remix-run/static-middleware`. **Skip beta.9 entirely**; go beta.6 → beta.10.
 
-Three sections follow, newest boundary first. Work backwards to wherever the
+Four sections follow, newest boundary first. Work backwards to wherever the
 project sits, then apply them in order: [beta.5 → beta.6](#beta5--beta6) is the
-large one, [beta.6 → beta.10](#beta6--beta10) is small and mostly additive, and
+large one, [beta.6 → beta.10](#beta6--beta10) is small and mostly additive,
 [beta.10 → rc.1](#beta10--rc1) is small but contains a **silent** DOM-attribute
-rename that neither the compiler nor the runtime will report.
+rename that neither the compiler nor the runtime will report, and
+[rc.1 → rc.2](#rc1--rc2) is mostly churn with one loud, compiler-caught break in
+`render-middleware`.
+
+## rc.1 → rc.2
+
+Twenty-four of the 48 packages the meta-package pins move, but almost all of it is patch churn
+tracking `fetch-router@0.22.0`. Four entries carry anything to do:
+
+| Package | rc.1 | rc.2 | |
+| --- | --- | --- | --- |
+| **`@remix-run/render-middleware`** | 0.2.0 | **0.3.0** | **asks an asset server for `getScriptEntry`, not `getHref` + `getPreloads`** |
+| **`@remix-run/assets`** | 0.6.0 | **0.7.0** | answers `getScriptEntry`; exported `generateFingerprint` is gone |
+| **`@remix-run/fetch-router`** | 0.21.0 | **0.22.0** | no API change; a method mismatch is now `405`, and `HEAD` falls back to `GET` |
+| `@remix-run/ui` | 0.8.0 | 0.9.0 | purely additive — see below |
+| `@remix-run/multiple-import-maps-polyfill` | — | 0.1.0 (new) | opt-in |
+| `@remix-run/cli` | 0.6.0 | 0.7.0 | |
+| `@remix-run/node-hmr` | 0.1.0 | 0.2.0 | no export change |
+| `auth` `data-table` `data-table-{mysql,postgres,sqlite}` `session-middleware` `spa` `static-middleware` and the `*-middleware` set | | | patch bumps |
+
+### Breaking change — `render({ assets })` wants a different asset server
+
+`render-middleware@0.3.0` narrowed what it asks of an asset server, from two calls to one:
+
+```diff
+- assets?: Pick<AssetServer, 'getHref' | 'getPreloads'>
++ assets?: Pick<AssetServer, 'getScriptEntry'>
+```
+
+`getScriptEntry(id)` answers with `{ href, preloads, importMap }` in one call, and the middleware
+puts the `importMap` into the document — which is what `ui@0.9.0`'s new `data-rmx-import-map` and
+the new polyfill package are for.
+
+Passing `@remix-run/assets`' own server? Then bumping the set together *is* the fix — `assets@0.7.0`
+adds `getScriptEntry` and keeps `getHref` and `getPreloads`, so nothing else at the call site moves.
+
+Passing **your own** asset server — an adapter, a Deno-side implementation, anything structural —
+then it must grow `getScriptEntry` or `render({ assets })` stops type-checking:
+
+```ts
+async getScriptEntry(entry: string): Promise<{
+  href: string
+  preloads?: string[]
+  importMap?: { imports: Record<string, string> }
+}> {
+  let [href, preloads] = await Promise.all([this.getHref(entry), this.getPreloads(entry)])
+  return { href, preloads, importMap: { imports: {} } }
+}
+```
+
+An empty import map is the honest answer when every specifier was already rewritten to a served URL
+at compile time — there is nothing bare left for the browser to resolve.
+
+This one the compiler does catch, which makes it the opposite of rc.1's attribute rename: loud, and
+fixed in one place.
+
+### `fetch-router@0.22.0`: a method mismatch is a 405 now
+
+No export changed. Two routing behaviors did:
+
+- A path that matches a route whose **method** does not now answers `405 Method Not Allowed` with an
+  `Allow` header listing the methods that do match. Previously it fell through to the `404` handler.
+  Anything asserting a 404 for `POST /some-get-route` — a test, a custom not-found page, a crawler
+  treating 404 as "skip" — sees a 405 instead.
+- A `HEAD` request with no `HEAD` or `ANY` route falls back to the most specific `GET` route of equal
+  specificity, and the response body is dropped.
+
+A crawl that only issues `GET`, which is what a static-site build does, sees neither.
+
+### `ui@0.9.0` is additive
+
+Nothing removed, nothing renamed — the export diff is eight additions:
+
+```diff
++ ImportMap
++ composeMixedProps
++ getDocumentImportMapManager
++ isDocumentReload
++ isMixinElementFunction
++ reloadDocument
++ resetDocumentImportMapManager
++ resolveMixDescriptors
+```
+
+**The `data-rmx-*` names from rc.1 are unchanged**, with one addition, `data-rmx-import-map`. The
+mixin authoring API (`createMixin`, `MixinType`, `MixinHandle`) is unchanged too: `on-mixin.ts` and
+`ref-mixin.ts` are byte-identical between 0.8.0 and 0.9.0, so a mixin written against rc.1 keeps
+compiling. So does a `createElement` / `RemixNode` consumer — `create-element.ts` is byte-identical
+and `jsx.ts`'s export signatures are unchanged.
+
+If you are on rc.1 already, this half of the hop is a version range and a relock.
+
+### The `^0.9.0` trap for library authors
+
+A package that depends on `@remix-run/ui` has to move its range with the set, even though the bump is
+additive. `^0.9.0` does not include 0.8, so a library left at `^0.8.0` resolves a **second copy of
+the UI runtime** in an application that moved to rc.2 — and module-level state (a store, a registry,
+the runtime's own document state) then exists twice, with no error. The same applies to
+`fetch-router`'s `^0.22.0`.
 
 ## beta.10 → rc.1
 
@@ -728,14 +830,14 @@ also pull unrelated majors — read its plan before accepting. If Deno refuses a
 version with "newer than the specified minimum dependency date", that is
 `minimumDependencyAge`, not a bad range; see the `deno-min-dep-age` skill.
 
-Pin the meta-package to an explicit release (`npm:remix@3.0.0-rc.1`). A bare
+Pin the meta-package to an explicit release (`npm:remix@3.0.0-rc.2`). A bare
 `npm:remix` resolves `latest`, which is **Remix v2** — v3 lives on the `next`
 tag.
 
 Order that avoids chasing type errors:
 
 1. Bump every `@remix-run/*` range in one pass, lockfile included. Land on
-   rc.1; never stop at beta.9, which cannot resolve.
+   rc.2; never stop at beta.9, which cannot resolve.
 2. Fix the data-table construction sites first — they are the loudest.
 3. Then the browser `resolveFrame` signature, which the compiler will *not*
    flag.
@@ -746,16 +848,27 @@ Order that avoids chasing type errors:
    beta.10.
 6. Rename every `rmx-*` attribute to `data-rmx-*` (and `data-key` to
    `data-rmx-key`) for rc.1. Grep for them — nothing else will find them.
-7. Type-check, lint, test, and exercise link, form, and frame navigation in a
+7. Give any asset server of your own a `getScriptEntry` for rc.2, and check every
+   `@remix-run/*` range in a library you publish — an additive bump still excludes
+   the previous minor, and a stale range resolves a second copy of the runtime.
+8. Type-check, lint, test, and exercise link, form, and frame navigation in a
    browser — the `resolveFrame` change, the form enhancement, beta.10's default
    resolver, and the rc.1 attribute rename do not show up in unit tests.
 
 ## Checklist
 
-### Landing on rc.1
+### Landing on rc.2
 
-- [ ] `remix` pinned to `3.0.0-rc.1` explicitly — not bare `npm:remix`
+- [ ] `remix` pinned to `3.0.0-rc.2` explicitly — not bare `npm:remix`
       (that is v2), and not beta.9 (uninstallable).
+- [ ] A custom asset server passed to `render({ assets })` answers
+      `getScriptEntry`; `@remix-run/assets`' own server does from 0.7.0.
+- [ ] Nothing asserts a `404` for a path that matches a route with another
+      method — `fetch-router@0.22.0` answers `405` with an `Allow` header.
+- [ ] Every `@remix-run/*` range in a package you publish moved with the set —
+      `^0.9.0` excludes 0.8, and a stale range gives consumers a second runtime.
+
+### Landing on rc.1
 - [ ] No bare `rmx-document` / `rmx-target` / `rmx-src` / `rmx-history` /
       `rmx-reset-scroll` / `rmx-preserve-dom` left anywhere — the grep in
       [beta.10 → rc.1](#beta10--rc1) returns nothing — and `data-key` renamed
