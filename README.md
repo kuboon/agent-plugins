@@ -167,12 +167,12 @@ the `--allow-sys` requirement, and the two different bases that relative paths
 resolve against. For **Turso / libSQL** — which `remix.json` cannot describe at
 all (`Expected one of: sqlite, postgres, mysql at db.adapter.type`) — it points
 at the CLI shipped by
-[`@kuboon/remix-data-table-sqlite-turso`](https://jsr.io/@kuboon/remix-data-table-sqlite-turso),
+[`@remix-kbn/data-table-sqlite-turso`](https://jsr.io/@remix-kbn/data-table-sqlite-turso),
 which wraps the same `runRemixDb()` the Remix CLI calls and adds the `rollback`
 that CLI has no flag for.
 
 > Sourced externally from
-> [`kuboon/kuboon-remix-utils`](https://github.com/kuboon/kuboon-remix-utils/tree/main/plugins/remix-db-migrations-deno),
+> [`kuboon/remix-kbn`](https://github.com/kuboon/remix-kbn/tree/main/plugins/remix-db-migrations-deno),
 > so the skill stays next to the Turso package it documents — the marketplace
 > entry points into that monorepo via a `git-subdir` source, and `apm.yml`
 > depends on the same path.
