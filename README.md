@@ -121,13 +121,26 @@ does not cascade to transitive dependencies).
 ### `remix-v3-upgrade`
 
 Upgrades a **Remix v3** project across beta and rc boundaries — currently up to
-`3.0.0-rc.2`. Ships a skill with the `@remix-run/*` version table for each hop
+`3.0.0-rc.3`. Ships a skill with the `@remix-run/*` version table for each hop
 and a before/after diff for every breaking change.
 
 Which release to land on is itself a trap: `beta.7` and `beta.8` were never
 published, and **`beta.9` cannot install** — it pins a renamed
 `@remix-run/static-files-middleware@^0.1.0` that only exists as a `0.0.0`
-placeholder. Go `beta.6` → `beta.10` → `rc.1` → `rc.2`.
+placeholder. Go `beta.6` → `beta.10` → `rc.1` → `rc.2` → `rc.3`.
+
+`rc.2` → `rc.3` moves 33 of the 48 pinned packages, and it is a security
+hardening release: the compiler catches exactly one of its breaks
+(`innerHTML` / `srcDoc` take an `UnsafeHTML` now, not a string), and the rest
+report nothing at all. `session-middleware@0.5.0` changes the session cookie's
+wire format whenever the cookie has a lifetime, so **every signed-in user is
+logged out the moment rc.3 deploys**. `cors-middleware@0.2.0` stops reflecting
+the request origin for credentialed requests, which browsers then reject.
+CSRF and COP check the real HTTP method instead of the overridden one.
+`tar-parser@0.8.0` enforces size limits and a path policy by default,
+`data-table@0.6.0` rejects an unconditional `update()` / `delete()`, and
+`ui@0.10.0` silently drops `on*` props and neuters `javascript:` URLs at
+render. The skill lists each one with the diff that causes it.
 
 `beta.10` → `rc.1` moves ten packages, and one of them breaks silently:
 `ui@0.8.0` renames **every** `rmx-*` DOM attribute to `data-rmx-*`

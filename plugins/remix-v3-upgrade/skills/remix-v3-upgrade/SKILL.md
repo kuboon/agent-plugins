@@ -2,29 +2,34 @@
 name: remix-v3-upgrade
 description: >-
   Upgrade a Remix v3 project across beta and rc boundaries — currently up to
-  `remix@3.0.0-rc.2`. Use this skill whenever bumping any `@remix-run/*`
+  `remix@3.0.0-rc.3`. Use this skill whenever bumping any `@remix-run/*`
   dependency, or when code that worked on an earlier release now misbehaves:
-  `Property 'getScriptEntry' is missing` from `render({ assets })`, a `405`
-  where a route used to fall through to the 404 handler, two copies of
-  `@remix-run/ui` in a lockfile after an additive bump,
-  a nav link changing the URL without changing the view, `rmx-document` /
-  `rmx-target` / `rmx-src` / `rmx-history` / `rmx-reset-scroll` /
-  `rmx-preserve-dom` / `data-key` silently doing nothing (they became
-  `data-rmx-*` in `@remix-run/ui@0.8.0`), a custom element losing its state on
-  every frame reload, `addEventListeners` no longer exported from
+  `Type 'string' is not assignable to type 'UnsafeHTML'` on `innerHTML` /
+  `srcDoc`, every signed-in user logged out after a deploy, a credentialed
+  cross-origin request rejected over `Access-Control-Allow-Origin: *`, a
+  form that used to skip CSRF now refused, a `javascript:` href replaced by
+  a thrown error, an `on*` prop silently dropped, a tar archive newly
+  rejected for size or a `..` path, `update() does not allow a structurally
+  unconditional where clause`, `Cannot parse form data` where
+  `request.formData()` used to answer, `Property 'getScriptEntry' is
+  missing` from `render({ assets })`, a `405` where a route used to fall
+  through to the 404 handler, two copies of `@remix-run/ui` in a lockfile
+  after an additive bump, a nav link changing the URL without changing the
+  view, `rmx-*` attributes and `data-key` silently doing nothing (they
+  became `data-rmx-*` in `@remix-run/ui@0.8.0`), a custom element losing its
+  state on every frame reload, `addEventListeners` gone from
   `@remix-run/ui`, `No matching version found for
   @remix-run/static-files-middleware@^0.1.0` (that is beta.9, which cannot
-  install), `Type 'Middleware' is not assignable to type 'AnyMiddleware'` from
-  `staticFiles()`, links or forms suddenly navigating through frames instead of
-  the document, `createDatabase` / `DatabaseAdapter` /
-  `createSqliteDatabaseAdapter` no longer exported from
-  `@remix-run/data-table`, `resolveFrame` receiving `undefined` for its signal
-  or target, `Route.href(params, searchParams)` / `createHref(pattern, params,
-  searchParams)` losing its query string, a `ParseError` on a route pattern like
-  `/:year-:month`, session cookies unreadable from client JavaScript,
-  `createAssetServer({ allow, deny })` being ignored, or `remix-test` not found.
-  Covers the package version table for each boundary and every breaking change
-  with before/after diffs.
+  install), `Type 'Middleware' is not assignable to type 'AnyMiddleware'`
+  from `staticFiles()`, links or forms suddenly navigating through frames,
+  `createDatabase` / `DatabaseAdapter` / `createSqliteDatabaseAdapter` gone
+  from `@remix-run/data-table`, `resolveFrame` receiving `undefined` for its
+  signal or target, `Route.href(params, searchParams)` /
+  `createHref(pattern, params, searchParams)` losing its query string, a
+  `ParseError` on a route pattern like `/:year-:month`, session cookies
+  unreadable from client JavaScript, `createAssetServer({ allow, deny })`
+  being ignored, or `remix-test` not found. Covers the package version table
+  for each boundary and every breaking change with before/after diffs.
 ---
 
 # Remix v3 upgrades
@@ -36,7 +41,7 @@ that look like your bug rather than a version skew.
 
 ## Which release to target
 
-**`remix@3.0.0-rc.2`** is the current `next` tag and the release to land on.
+**`remix@3.0.0-rc.3`** is the current `next` tag and the release to land on.
 
 The ladder has holes, so do not walk it one number at a time:
 
@@ -48,7 +53,8 @@ The ladder has holes, so do not walk it one number at a time:
 | `3.0.0-beta.9` | published but **uninstallable** (see below) |
 | `3.0.0-beta.10` | published, installs clean |
 | `3.0.0-rc.1` | published, installs clean |
-| `3.0.0-rc.2` | published, installs clean — current `next` |
+| `3.0.0-rc.2` | published, installs clean |
+| `3.0.0-rc.3` | published, installs clean — current `next` |
 
 beta.9 pins `@remix-run/static-files-middleware@^0.1.0`, a renamed package that
 was never released — npm has only a `0.0.0` placeholder and the repo has no such
@@ -62,13 +68,307 @@ npm error notarget No matching version found for @remix-run/static-files-middlew
 beta.10 reverts that rename and stays on the established
 `@remix-run/static-middleware`. **Skip beta.9 entirely**; go beta.6 → beta.10.
 
-Four sections follow, newest boundary first. Work backwards to wherever the
+Five sections follow, newest boundary first. Work backwards to wherever the
 project sits, then apply them in order: [beta.5 → beta.6](#beta5--beta6) is the
 large one, [beta.6 → beta.10](#beta6--beta10) is small and mostly additive,
 [beta.10 → rc.1](#beta10--rc1) is small but contains a **silent** DOM-attribute
-rename that neither the compiler nor the runtime will report, and
+rename that neither the compiler nor the runtime will report,
 [rc.1 → rc.2](#rc1--rc2) is mostly churn with one loud, compiler-caught break in
-`render-middleware`.
+`render-middleware`, and [rc.2 → rc.3](#rc2--rc3) is a security-hardening
+release whose breaks are mostly **runtime** — one compiler error, and half a
+dozen behaviour changes that report nothing.
+
+## rc.2 → rc.3
+
+Thirty-three of the 48 packages the meta-package pins move. Read the whole section even if the
+project only imports two of them: **rc.3 is a coordinated hardening release**, and most of what it
+changes is runtime behaviour that neither the compiler nor a unit test will report. Ten of the 33
+have no source change at all (`assets` `async-context-middleware` `auth-middleware` `cli`
+`fetch-router` `logger-middleware` `method-override-middleware` `render-middleware` `spa`
+`static-middleware`) — they were re-released to pick up a dependency. Nothing was removed from any
+package's exports.
+
+Six packages take a minor bump, and those are where the behaviour sits:
+
+| Package | rc.2 | rc.3 | |
+| --- | --- | --- | --- |
+| **`@remix-run/ui`** | 0.9.0 | **0.10.0** | **`innerHTML` / `srcDoc` no longer take a string**; `javascript:` URLs and `on*` props are stripped at render |
+| **`@remix-run/session-middleware`** | 0.4.1 | **0.5.0** | **the session cookie's wire format changes** when the cookie has a lifetime — existing sessions are dropped |
+| **`@remix-run/cors-middleware`** | 0.1.9 | **0.2.0** | credentialed requests stop working unless `origin` is set explicitly |
+| **`@remix-run/tar-parser`** | 0.7.1 | **0.8.0** | new default size/count limits and a path policy that rejects `..` and absolute paths |
+| **`@remix-run/data-table`** | 0.5.1 | **0.6.0** | `update()` / `delete()` reject an unconditional `where`; `compileOrderByDirection` added for adapters |
+| **`@remix-run/cookie`** | 0.6.0 | **0.7.0** | `Cookie#secure` is `boolean \| undefined` now, not `boolean` |
+
+The patch bumps that still change behaviour: `csrf-middleware` 0.1.10, `cop-middleware` 0.1.10,
+`form-data-parser` 0.17.6, `form-data-middleware` 0.3.7, `multipart-parser` 0.16.5, `fetch-proxy`
+0.8.6, `response` 0.3.9, `file-storage-s3` 0.1.5, `headers` 0.21.2, `route-pattern` 0.24.1,
+`data-schema` 0.3.1, `auth` 0.3.2, `data-table-{mysql,postgres,sqlite}`, `compression-middleware`
+0.1.15, `test` 0.6.1.
+
+### Breaking change — `innerHTML` and `srcDoc` take an `UnsafeHTML`, not a string
+
+The one break the compiler catches:
+
+```diff
+- innerHTML?: string
++ innerHTML?: UnsafeHTML
+
+- srcDoc?: Trackable<string | undefined>
++ srcDoc?: Trackable<UnsafeHTML | undefined>
+```
+
+`srcdoc` (lowercase) moves with `srcDoc`. Wrap the value at the call site:
+
+```diff
++ import { unsafeHTML } from '@remix-run/ui'
+
+- <div innerHTML={rendered} />
++ <div innerHTML={unsafeHTML(rendered)} />
+```
+
+`unsafeHTML(value: string): UnsafeHTML` and `readUnsafeHTML(value: unknown): string | undefined` are
+the whole API. The type is opaque — a frozen wrapper class, not a branded string — so the wrap has
+to happen where you decide the HTML is safe, which is the point of the change.
+
+It is not only a type. Both the server renderer and the browser runtime pass host props through
+`normalizeUnsafeHTMLProps`, which **throws** on a raw string:
+
+```
+Framework invariant: Invalid innerHTML prop
+```
+
+So a value arriving from untyped JavaScript, a spread, or a `props` object the compiler never saw
+fails at render rather than sneaking through. `outerHTML` throws the same way — it is not a
+supported prop at all.
+
+This only touches the Remix JSX prop. A class of your own with an `innerHTML` accessor, or a real
+DOM node you are driving by hand, is unaffected — and so is a `hast`/`linkedom` container, which is
+what most `innerHTML` grep hits in a Markdown pipeline turn out to be.
+
+### `ui@0.10.0` also filters props at render — silently
+
+Three new runtime rules, applied by both the server renderer and the browser runtime. Nothing
+throws; the offending value simply does not reach the DOM.
+
+- **`javascript:` URLs are replaced.** In `href`, `src`, `action`, `formaction`, `xlink:href`, and
+  `<object data>`, a value whose scheme parses as `javascript:` becomes
+  `javascript:throw new Error('Remix has blocked a javascript: URL as a security precaution.')`.
+  The test tolerates leading control characters and interleaved `\r\n\t`, so the obfuscated spellings
+  are caught too. A `javascript:` bookmarklet rendered deliberately stops working.
+- **`on*` props are dropped from host elements.** Any prop whose lowercased name starts with `on` is
+  skipped. Use `mix={on("click", …)}`, which is the supported path and unaffected.
+- **`__proto__` and `outerHTML` are dropped** by the attribute path, as is any prop name containing
+  a NUL, tab, newline, form feed, carriage return, space, quote, `/`, `>`, or `=`. (`outerHTML`
+  throws earlier, in `normalizeUnsafeHTMLProps`, before it reaches here.)
+
+If a page suddenly renders without a handler or a link stops navigating after rc.3, this is where to
+look. `isAllowedHostPropName` and `sanitizeUrlAttribute` are exported, so you can assert on them
+directly.
+
+The rest of `ui@0.10.0` is additive — ten new exports, nothing removed:
+
+```diff
++ CommittedClientEntryNode
++ NamedFrameRegistry
++ UnsafeHTML
++ isAllowedHostPropName
++ isCommittedClientEntryNode
++ normalizeUnsafeHTMLProps
++ readUnsafeHTML
++ reloadCurrentDocument
++ sanitizeUrlAttribute
++ unsafeHTML
+```
+
+**The `data-rmx-*` names are unchanged from rc.2.** There is no repeat of the rc.1 attribute rename.
+
+### Breaking change — `session-middleware@0.5.0` changes the cookie's wire format
+
+The loudest operational change in the release, and it reports nothing at all.
+
+If the session cookie was constructed with `maxAge` or `expires`, the middleware now stores a JSON
+envelope instead of the bare storage value:
+
+```ts
+// what 0.5.0 writes when the cookie has a lifetime
+JSON.stringify({ value: setCookieValue, expires: Date.now() + maxAge * 1000 })
+```
+
+and on the way in, `readExpiringCookie` returns `null` for anything that is not that envelope with a
+future `expires`. **A cookie issued by 0.4.x is not that shape, so it reads as no session at all.**
+Deploy rc.3 and every signed-in user is signed out on their next request. There is no migration path
+in the package; plan for the logout, or roll the session cookie's name deliberately so nothing looks
+like a bug.
+
+The lifetime is now enforced server-side too. Previously the cookie's `Max-Age` was the only thing
+stopping an old session from being loaded — a client that kept sending the cookie past its expiry
+got its session back. Now the envelope's timestamp is checked before `sessionStorage.read`.
+
+Two defaults moved with it:
+
+```diff
+  await sessionCookie.serialize(setCookieValue, {
+    httpOnly: sessionCookie.httpOnly ?? true,
++   secure: sessionCookie.secure ?? context.url.protocol === 'https:',
+  })
+```
+
+An explicit `secure` on the cookie still wins. This is what `cookie@0.7.0` exists for: `Cookie#secure`
+had to stop collapsing "not configured" into `false` for that `??` to mean anything, so its getter is
+now `boolean | undefined`. Code that reads `cookie.secure` and expects a `boolean` is a compile error
+under `strict` — the one loud symptom of an otherwise quiet package.
+
+### Breaking change — `cors-middleware@0.2.0` stops reflecting the origin by default
+
+```diff
+- if (allowCredentials && allowedOrigin === '*') {
++ if (allowCredentials && allowedOrigin === '*' && options.origin !== undefined) {
+    allowOriginHeader = requestOrigin
+  }
+```
+
+With `credentials: true` and no `origin` option, rc.2 quietly reflected the request's `Origin`,
+which meant "any site may make credentialed requests to this API". rc.3 leaves the header as `*`,
+and **browsers reject a credentialed response with `Access-Control-Allow-Origin: *`** — so a working
+cross-origin setup starts failing in the browser while the server logs a clean 200.
+
+The fix is to say what you meant:
+
+```diff
+  cors({
+    credentials: true,
++   origin: ['https://app.example.com'],   // or `true` to reflect deliberately
+  })
+```
+
+`origin: true` restores the reflecting behaviour, now as an explicit choice. Separately,
+`Access-Control-Request-Private-Network` is added to `Vary` whenever `allowPrivateNetwork` is set,
+not only when the request asked — a cache-correctness fix with no action required.
+
+### Breaking change — CSRF and COP check the *original* method
+
+```diff
+- if (isSafeMethod(context.method, safeMethods)) {
++ if (isSafeMethod(context.request.method.toUpperCase(), safeMethods)) {
+```
+
+Same change in `cop-middleware`, including its bypass-pattern matching. `context.method` reflects the
+method *after* `method-override-middleware` has run, so a `POST` arriving as an override of a `GET`
+was being waved through as a safe method. rc.3 reads the real HTTP method off the request.
+
+If the app uses method override, requests that used to skip CSRF validation now require a token. The
+`safeMethods` option's meaning is unchanged; what it is compared against is what moved.
+
+### `tar-parser@0.8.0` adds limits and a path policy, both on by default
+
+New `ParseTarOptions` fields, all enforced unless you opt out with `Infinity`:
+
+| Option | Default |
+| --- | --- |
+| `maxEntrySize` | 2 MiB (2097152) |
+| `maxTotalSize` | 20 MiB (20971520) |
+| `maxEntries` | 5000 |
+
+Exceeding one throws `MaxEntrySizeExceededError`, `MaxTotalSizeExceededError`, or
+`MaxEntriesExceededError` — all new exports, all subclasses of `TarParseError`. An archive that
+parsed fine in rc.2 and is larger than 20 MiB now fails, so raise the limits explicitly if you are
+parsing real archives:
+
+```ts
+await parseTar(archive, { maxTotalSize: Infinity, maxEntrySize: 64 * 1024 * 1024 }, handler)
+```
+
+`TarParserOptions` is now `ParseTarOptions` rather than `ParseTarHeaderOptions`, so a `TarParser`
+constructed directly takes the limits too, and exposes them as readonly properties.
+
+The other half is `pathPolicy`, defaulting to `'relative'`: entry names and link targets that are
+empty, absolute, contain a Windows drive prefix, a backslash, or a NUL are rejected, entry names may
+not contain `..`, and link targets may not resolve above the archive root. `pathPolicy: 'preserve'`
+restores rc.2's behaviour. Note what the docs are careful to say: **neither policy guarantees
+containment on the destination filesystem** — if you write entries to disk, you still validate.
+
+### `data-table@0.6.0`: an unconditional `where` is rejected
+
+`update()` and `delete()` now throw `DataTableQueryError` when every predicate in the `where` clause
+is structurally unconditional — in practice `notIn(column, [])`, or an `and`/`or` tree of them:
+
+```
+update() does not allow a structurally unconditional where clause
+```
+
+This catches the "empty array of ids" bug where a filter meant to narrow a write instead matches
+every row. A deliberate write-everything still works: pass no `where` at all.
+
+Two API notes. The comparison operators (`eq` `ne` `gt` `gte` `lt` `lte`) **widen** their second
+parameter from `ColumnInput & (not a column reference)` to `ColumnReferenceLike`, so existing calls
+keep compiling. And `compileOrderByDirection` is new in `@remix-run/data-table/sql-helpers`:
+
+```ts
+export function compileOrderByDirection(direction: unknown): 'ASC' | 'DESC'
+```
+
+It throws `TypeError` on anything but `asc`/`desc`. The three first-party adapters switched to it
+from `clause.direction.toUpperCase()`, which interpolated an unvalidated string into SQL. **A custom
+adapter is the one place rc.3 will not fix for you** — if yours compiles `order by` itself, make the
+same change.
+
+### `form-data-parser@0.17.6` throws instead of falling back
+
+```diff
+  if (!isMultipartRequest(request)) {
+-   try {
+-     return await request.formData()
+-   } catch (error) {
+-     throw new FormDataParseError('Cannot parse form data', { cause: error })
+-   }
++   throw new FormDataParseError('Cannot parse form data')
+  }
+```
+
+`parseFormData` accepts `multipart/*` and `application/x-www-form-urlencoded`, and nothing else. A
+request with some other content type — or none — used to reach the platform's `request.formData()`
+and sometimes succeed; now it throws before the body is read.
+
+Content-type detection across `form-data-parser`, `form-data-middleware`, and `multipart-parser`
+also moved from `contentType.startsWith(…)` to parsing the header with
+`ContentType.from(…).mediaType`. A header like `Application/X-WWW-Form-URLencoded ; charset=utf-8`
+is now recognised where the prefix test missed it, and a type such as `multipart/form-data-evil` no
+longer matches `multipart/`. `form-data-middleware` still sets an empty `FormData` for an unmatched
+type rather than throwing.
+
+### The rest
+
+- **`fetch-proxy@0.8.6`** — `xForwardedHeaders: true` now `set`s the three `X-Forwarded-*` headers
+  instead of appending, and **deletes incoming `Forwarded` and `X-Forwarded-For`**. A client could
+  previously forge them. If something downstream reads `X-Forwarded-For` through this proxy, it will
+  now find nothing: a Fetch `Request` has no client address to put there.
+- **`response@0.3.9`** — `text/html` joins `text/event-stream` in getting an automatic
+  `Z_SYNC_FLUSH` / `BROTLI_OPERATION_FLUSH`, so a streamed HTML response reaches the browser
+  incrementally instead of sitting in the compressor. Media-type matching is case-insensitive now.
+  An explicit `flush` still wins.
+- **`file-storage-s3@0.1.5`** — an empty key, or a key with a `.` or `..` segment, throws
+  `TypeError` instead of being encoded and sent.
+- **`headers@0.21.2`** — `SameSite` parsing is anchored (`/^(strict|lax|none)$/i`), so a malformed
+  value no longer matches on a substring.
+- **`route-pattern@0.24.1`** — a backslash is now structural in hostname params (special schemes
+  treat `\` as `/`), and the matcher charges its work budget while scanning `:param` segments, so a
+  pathological pattern hits the budget instead of running long.
+- **`data-schema@0.3.1`** — issue `path` arrays are copied rather than aliasing the validator's
+  shared mutable path, so issues from a custom schema report the path they were created at. If you
+  built a schema with `createSchema`, its validator's context parameter is now typed
+  `ValidationContext` instead of an inline object type — compatible, and worth adopting.
+- **`auth@0.3.2`** — `finishExternalAuth`'s `returnTo` is passed through `sanitizeReturnTo`, so a
+  stored redirect target that is not a local path comes back `undefined` instead of being handed to
+  your redirect. Open-redirect fix; if you relied on an absolute `returnTo`, it no longer survives.
+- **`test@0.6.1`** — the worker imports the Playwright e2e runner lazily, so a server-only test run
+  no longer needs Playwright installed.
+
+### If you publish a library
+
+Same trap as every boundary, and rc.3 is a wide one: `^0.10.0` excludes 0.9, `^0.6.0` excludes 0.5,
+`^0.5.0` excludes 0.4, `^0.7.0` excludes 0.6. A package still on `@remix-run/ui@^0.9.0` gives an
+rc.3 application **a second copy of the UI runtime**, with module-level state duplicated and no
+error. Move every range with the set, and publish, before bumping the app that consumes it.
 
 ## rc.1 → rc.2
 
@@ -830,14 +1130,14 @@ also pull unrelated majors — read its plan before accepting. If Deno refuses a
 version with "newer than the specified minimum dependency date", that is
 `minimumDependencyAge`, not a bad range; see the `deno-min-dep-age` skill.
 
-Pin the meta-package to an explicit release (`npm:remix@3.0.0-rc.2`). A bare
+Pin the meta-package to an explicit release (`npm:remix@3.0.0-rc.3`). A bare
 `npm:remix` resolves `latest`, which is **Remix v2** — v3 lives on the `next`
 tag.
 
 Order that avoids chasing type errors:
 
 1. Bump every `@remix-run/*` range in one pass, lockfile included. Land on
-   rc.2; never stop at beta.9, which cannot resolve.
+   rc.3; never stop at beta.9, which cannot resolve.
 2. Fix the data-table construction sites first — they are the loudest.
 3. Then the browser `resolveFrame` signature, which the compiler will *not*
    flag.
@@ -851,11 +1151,45 @@ Order that avoids chasing type errors:
 7. Give any asset server of your own a `getScriptEntry` for rc.2, and check every
    `@remix-run/*` range in a library you publish — an additive bump still excludes
    the previous minor, and a stale range resolves a second copy of the runtime.
-8. Type-check, lint, test, and exercise link, form, and frame navigation in a
+8. For rc.3, wrap every `innerHTML` / `srcDoc` value in `unsafeHTML()` — that
+   one the compiler finds — then walk the silent list: a session cookie with a
+   `maxAge` or `expires` (everyone gets logged out), `cors()` with
+   `credentials: true` and no `origin`, CSRF or COP behind
+   `method-override-middleware`, `parseTar` on archives over 20 MiB, a custom
+   data-table adapter compiling `order by`, and `parseFormData` on anything that
+   is not multipart or url-encoded.
+9. Type-check, lint, test, and exercise link, form, and frame navigation in a
    browser — the `resolveFrame` change, the form enhancement, beta.10's default
-   resolver, and the rc.1 attribute rename do not show up in unit tests.
+   resolver, the rc.1 attribute rename, and rc.3's prop filtering do not show up
+   in unit tests.
 
 ## Checklist
+
+### Landing on rc.3
+
+- [ ] `remix` pinned to `3.0.0-rc.3` explicitly — not bare `npm:remix`
+      (that is v2), and not beta.9 (uninstallable).
+- [ ] Every `innerHTML` / `srcDoc` / `srcdoc` JSX prop wrapped in `unsafeHTML()`.
+- [ ] The session cookie's lifetime decided deliberately: if it has `maxAge` or
+      `expires`, rc.3 changes the cookie's wire format and **every existing
+      session is dropped on deploy**.
+- [ ] Any `cors()` with `credentials: true` carries an explicit `origin` — the
+      `*` default is no longer reflected, and browsers reject it.
+- [ ] CSRF / COP re-checked wherever `method-override-middleware` runs: they
+      read the real HTTP method now, so overridden requests need a token.
+- [ ] `parseTar` / `TarParser` call sites given explicit `maxEntrySize`,
+      `maxTotalSize`, `maxEntries` if any archive exceeds 2 MiB per entry,
+      20 MiB total, or 5000 entries — and `pathPolicy` considered.
+- [ ] No `update()` / `delete()` relies on a `notIn(col, [])`-style where clause.
+- [ ] A custom data-table adapter compiles `order by` through
+      `compileOrderByDirection`, not `direction.toUpperCase()`.
+- [ ] `parseFormData` is never handed a body that is not `multipart/*` or
+      `application/x-www-form-urlencoded` — it throws now instead of falling back.
+- [ ] Nothing renders a deliberate `javascript:` URL or an `on*` host prop; both
+      are stripped at render with no error.
+- [ ] Anything reading `Cookie#secure` handles `undefined` (`strict` will say so).
+- [ ] Exercised in a real browser: sign-in, a cross-origin credentialed request,
+      and a form that posts. None of the three fails a unit test.
 
 ### Landing on rc.2
 
