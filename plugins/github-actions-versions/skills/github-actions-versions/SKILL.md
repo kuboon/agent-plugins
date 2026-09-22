@@ -62,7 +62,7 @@ option.
 ### Deploy / release / coverage / security
 | `uses:` | Pin | Notes |
 |---|---|---|
-| `cloudflare/wrangler-action` | `@v3` | Action major is v3; it defaults to installing Wrangler v4. Pin `wranglerVersion:` if a specific CLI is needed. |
+| `cloudflare/wrangler-action` | `@v4` | Re-checked 2026-09-22. Drop-in from `@v3`: inputs and outputs are byte-identical, only the runner moved (`node20` → `node24`). Upgrade anyway, because the **default CLI** differs — `@v3` installs Wrangler `3.90.0`, `@v4` installs Wrangler `4`. Pin `wranglerVersion:` for a specific CLI. |
 | `softprops/action-gh-release` | `@v2` | Needs `contents: write`. |
 | `codecov/codecov-action` | `@v7` | |
 | `github/codeql-action` | `@v4` | The `init`/`analyze`/`autobuild` steps all share this version. |
@@ -118,7 +118,7 @@ v4→v6 (v4 of both is deprecated / runs on EOL Node)."
   with:
     deno-version: v2.x
 - run: deno test -A
-- uses: cloudflare/wrangler-action@v3
+- uses: cloudflare/wrangler-action@v4
   with:
     apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
