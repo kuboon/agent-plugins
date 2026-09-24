@@ -1,0 +1,10 @@
+{
+  "name": "ios-standalone-status-bar",
+  "description": "When an installed (Add to Home Screen) web app shows a blur band or washed-out header at the top on iOS 26+, the cause is apple-mobile-web-app-status-bar-style: black-translucent. Drop it, tint the opaque bar with theme-color, and re-add the icon.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

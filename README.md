@@ -35,6 +35,7 @@ claude plugin install deno-min-dep-age@agent-plugins
 claude plugin install remix-v3-upgrade@agent-plugins
 claude plugin install remix-db-migrations-deno@agent-plugins
 claude plugin install stacked-prs@agent-plugins
+claude plugin install ios-standalone-status-bar@agent-plugins
 claude plugin install game-feel@agent-plugins
 ```
 
@@ -223,3 +224,20 @@ already works; it does not implement the mechanic.
 > instructions loaded into the model's context, so tracking a third-party
 > default branch would let upstream edits reach it without review. Note that this
 > one plugin is Apache-2.0, while the rest of this repository is MIT.
+
+### `ios-standalone-status-bar`
+
+When a web app installed to the iPhone Home Screen renders a **frosted blur band
+across the top** on iOS 26+ — header smeared, content smudged a row or two below
+the status bar — the cause is
+`apple-mobile-web-app-status-bar-style: black-translucent`. It puts the page's
+own pixels under the status bar, and iOS 26 fills that inset with the Liquid
+Glass scroll edge effect wherever it cannot sample a flat colour. Nothing turns
+the effect off, so the fix is `default`: let iOS inset the web view below an
+opaque bar and tint it from `theme-color`.
+
+Ships a skill with the diff, the `theme-color`-follows-your-theme requirement,
+what to keep (`viewport-fit=cover`, safe-area insets, the legacy
+`display-mode: standalone` height workaround), and the gotcha that makes the fix
+look broken — **iOS caches these tags with the Home Screen icon**, so an existing
+install keeps the old behavior until the icon is deleted and re-added.

@@ -20,6 +20,7 @@ dependencies:
     - kuboon/agent-plugins/plugins/remix-v3-upgrade/skills/remix-v3-upgrade
     - kuboon/remix-kbn/plugins/remix-db-migrations-deno/skills/remix-db-migrations-deno
     - kuboon/agent-plugins/plugins/stacked-prs/skills/stacked-prs
+    - kuboon/agent-plugins/plugins/ios-standalone-status-bar/skills/ios-standalone-status-bar
     - kuboon/agent-plugins/plugins/game-feel/skills/game-feel
   mcp: []
 includes: auto

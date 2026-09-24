@@ -68,6 +68,11 @@
       "description": "When a PR is open and there is more work to do, stack the next PR on its branch instead of waiting for the merge or restarting from main: the layering rule, gh stack commands, and bottom-up merge semantics."
     },
     {
+      "name": "ios-standalone-status-bar",
+      "source": "./plugins/ios-standalone-status-bar",
+      "description": "When an installed (Add to Home Screen) web app shows a Liquid Glass blur band or washed-out header at the top on iOS 26+, drop apple-mobile-web-app-status-bar-style: black-translucent, tint the opaque bar with theme-color, and re-add the icon."
+    },
+    {
       "name": "game-feel",
       "source": "./plugins/game-feel",
       "description": "Add game feel / juice — screen shake, hit-stop, easing, squash & stretch, knockback, layered feedback — as engine-neutral techniques. Vendored from gamedev-skills/awesome-gamedev-agent-skills under Apache-2.0."
