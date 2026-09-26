@@ -10,6 +10,7 @@ targets:
 dependencies:
   apm:
     - kuboon/agent-plugins/plugins/github-actions-versions/skills/github-actions-versions
+    - kuboon/agent-plugins/plugins/github-actions-timeout/skills/github-actions-timeout
     - kuboon/agent-plugins/plugins/deno-remix-init/skills/deno-remix-init
     - kuboon/browser-how-to
     - kuboon/agent-plugins/plugins/github-page-preview/skills/github-page-preview

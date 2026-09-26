@@ -25,6 +25,7 @@ them land in `~/.claude/skills/`. Add a skill to the repo, add one line to
 ```bash
 claude plugin marketplace add kuboon/agent-plugins
 claude plugin install github-actions-versions@agent-plugins
+claude plugin install github-actions-timeout@agent-plugins
 claude plugin install deno-remix-init@agent-plugins
 claude plugin install browser-how-to@agent-plugins
 claude plugin install github-page-preview@agent-plugins
@@ -47,6 +48,17 @@ Pins GitHub Actions to current, non-deprecated major versions when writing or
 editing GitHub Actions workflows. Ships a skill that overrides the model's habit
 of emitting stale `uses:` references (e.g. `actions/checkout@v4`) with a
 maintained version table.
+
+### `github-actions-timeout`
+
+Gives every GitHub Actions job an explicit `timeout-minutes`. The default is
+**360** — a hung job (wedged test runner, a process waiting on stdin, a watcher
+that never exits) burns **six hours** of Actions quota before GitHub's hard cap
+terminates it, and a matrix multiplies that per leg. Ships a skill with the
+value to pick (10 by default), why the default bites, and the two places the
+setting cannot go: there is no workflow-wide `defaults.timeout-minutes`, and a
+job that calls a reusable workflow rejects the key entirely — so a reusable
+workflow's own jobs must carry it, because no caller can add one afterwards.
 
 ### `deno-remix-init`
 
