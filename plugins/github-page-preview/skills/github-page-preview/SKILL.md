@@ -52,6 +52,10 @@ jobs:
     #   dist-dir: dist
 ```
 
+A caller **cannot** add `timeout-minutes` here — it is not a valid key on a job
+that calls a reusable workflow. The timeout has to be set on the jobs inside
+`github-page-with-preview.yaml` itself; see the `github-actions-timeout` skill.
+
 Pin the ref for stability: `@main` (as the repo's README shows), or a released
 tag / major branch such as `@v0.15.0` or `@v0` (the repo maintains major-version
 branches). Prefer a pinned tag over `@main` when you want reproducible CI —

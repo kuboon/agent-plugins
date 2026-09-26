@@ -1,0 +1,10 @@
+{
+  "name": "github-actions-timeout",
+  "description": "Every GitHub Actions job gets an explicit timeout-minutes. The default is 360 — a hung job burns six hours of the Actions quota before GitHub kills it. Default to 10 for kuboon's projects.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

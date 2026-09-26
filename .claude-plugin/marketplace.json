@@ -14,6 +14,11 @@
       "description": "Pin GitHub Actions to current, non-deprecated major versions when writing or editing workflows."
     },
     {
+      "name": "github-actions-timeout",
+      "source": "./plugins/github-actions-timeout",
+      "description": "Give every GitHub Actions job an explicit timeout-minutes. The default is 360, so a hung job burns six hours of Actions quota before GitHub kills it; default to 10."
+    },
+    {
       "name": "deno-remix-init",
       "source": "./plugins/deno-remix-init",
       "description": "When initializing a new project, use Deno (not Node.js) and Remix v3 as the web framework, following the deno-remix-reference patterns."
