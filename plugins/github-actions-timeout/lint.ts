@@ -91,7 +91,7 @@ function parseJobs(text: string): Map<string, WorkflowJobSummary> {
     const { indent, key, value } = parsed;
 
     if (jobsIndent === null) {
-      if (key === "jobs") {
+      if (key === "jobs" && value === "") {
         jobsIndent = indent;
       }
       continue;
@@ -101,7 +101,7 @@ function parseJobs(text: string): Map<string, WorkflowJobSummary> {
       currentJobName = null;
       currentJobIndent = null;
       currentPropertyIndent = null;
-      jobsIndent = key === "jobs" ? indent : null;
+      jobsIndent = key === "jobs" && value === "" ? indent : null;
       continue;
     }
 
@@ -202,8 +202,14 @@ export async function readStdin(
   return await new Response(stream).text();
 }
 
+function formatJobPath(jobName: string): string {
+  return `jobs[${JSON.stringify(jobName)}]`;
+}
+
 function formatDiagnostic(diagnostic: Diagnostic): string {
-  return `${diagnostic.filePath}: jobs.${diagnostic.jobName}: ${diagnostic.message}`;
+  return `${diagnostic.filePath}: ${
+    formatJobPath(diagnostic.jobName)
+  }: ${diagnostic.message}`;
 }
 
 export async function main(

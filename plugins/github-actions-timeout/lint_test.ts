@@ -77,6 +77,17 @@ Deno.test("supports quoted job keys with colons", () => {
   ]);
 });
 
+Deno.test("ignores inline jobs mappings", () => {
+  const diagnostics = lintWorkflowText(
+    `jobs: {}
+name: CI
+`,
+    "/repo/.github/workflows/ci.yml",
+  );
+
+  assertEquals(diagnostics, []);
+});
+
 Deno.test("reports runs-on jobs without timeout-minutes", () => {
   const diagnostics = lintWorkflowText(
     `jobs:
@@ -194,7 +205,7 @@ Deno.test("main returns 1 when diagnostics are found", async () => {
     );
     assertEquals(exitCode, 1);
     assertEquals(stderr, [
-      ".github/workflows/ci.yml: jobs.test: runs-on job is missing timeout-minutes",
+      '.github/workflows/ci.yml: jobs["test"]: runs-on job is missing timeout-minutes',
     ]);
   } finally {
     console.error = restore;
