@@ -199,7 +199,7 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
   for (const [jobName, job] of jobs) {
     const timeoutValue = job.timeoutValue?.trim();
 
-    if (job.hasRunsOn && timeoutValue === undefined) {
+    if (job.hasRunsOn && (timeoutValue === undefined || timeoutValue === "")) {
       diagnostics.push({
         filePath,
         jobName,
@@ -221,7 +221,7 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
       });
     }
 
-    if (job.hasUses && timeoutValue !== undefined) {
+    if (job.hasUses && !job.hasRunsOn && timeoutValue !== undefined) {
       diagnostics.push({
         filePath,
         jobName,

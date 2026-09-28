@@ -145,6 +145,25 @@ Deno.test("reports runs-on jobs without timeout-minutes", () => {
   ]);
 });
 
+Deno.test("treats empty timeout-minutes as missing", () => {
+  const diagnostics = lintWorkflowText(
+    `jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes:
+`,
+    "/repo/.github/workflows/ci.yml",
+  );
+
+  assertEquals(diagnostics, [
+    {
+      filePath: "/repo/.github/workflows/ci.yml",
+      jobName: "test",
+      message: "runs-on job is missing timeout-minutes",
+    },
+  ]);
+});
+
 Deno.test("reports non-integer timeout-minutes values", () => {
   const diagnostics = lintWorkflowText(
     `jobs:
@@ -165,6 +184,20 @@ Deno.test("reports non-integer timeout-minutes values", () => {
         "timeout-minutes must be a positive integer or GitHub Actions expression",
     },
   ]);
+});
+
+Deno.test("does not treat runs-on jobs with uses keys as reusable-workflow callers", () => {
+  const diagnostics = lintWorkflowText(
+    `jobs:
+  test:
+    runs-on: ubuntu-latest
+    uses: owner/action@v1
+    timeout-minutes: 10
+`,
+    "/repo/.github/workflows/ci.yml",
+  );
+
+  assertEquals(diagnostics, []);
 });
 
 Deno.test("reports timeout-minutes on reusable-workflow caller jobs", () => {
