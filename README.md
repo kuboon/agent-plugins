@@ -60,7 +60,7 @@ setting cannot go: there is no workflow-wide `defaults.timeout-minutes`, and a
 job that calls a reusable workflow rejects the key entirely — so a reusable
 workflow's own jobs must carry it, because no caller can add one afterwards.
 
-The plugin directory also ships a small Deno linter you can run with `deno run -A plugins/github-actions-timeout/lint.ts`, plus colocated Deno tests in `plugins/github-actions-timeout/lint_test.ts`.
+The plugin directory also ships a small Deno linter that reads workflow YAML from stdin, for example `cat .github/workflows/ci.yml | deno run plugins/github-actions-timeout/lint.ts .github/workflows/ci.yml`, plus colocated Deno tests in `plugins/github-actions-timeout/lint_test.ts`.
 
 ### `deno-remix-init`
 

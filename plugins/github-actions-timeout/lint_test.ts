@@ -1,6 +1,17 @@
 import { assertEquals } from "jsr:@std/assert@1.0.15";
 
-import { collectWorkflowFiles, lintWorkflowText, main } from "./lint.ts";
+import { lintWorkflowText, main, readStdin } from "./lint.ts";
+
+function streamFromText(text: string): ReadableStream<Uint8Array> {
+  const bytes = new TextEncoder().encode(text);
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(bytes);
+      controller.close();
+    },
+  });
+}
 
 Deno.test("accepts runs-on jobs with timeout-minutes", () => {
   const diagnostics = lintWorkflowText(
@@ -78,31 +89,12 @@ Deno.test("reports timeout-minutes on reusable-workflow caller jobs", () => {
   ]);
 });
 
-Deno.test("collectWorkflowFiles defaults to .github/workflows", async () => {
-  const root = await Deno.makeTempDir();
-  await Deno.mkdir(`${root}/.github/workflows`, { recursive: true });
-  await Deno.writeTextFile(`${root}/.github/workflows/ci.yml`, "jobs: {}\n");
-  await Deno.writeTextFile(`${root}/.github/workflows/notes.txt`, "ignore\n");
-
-  const previousCwd = Deno.cwd();
-  Deno.chdir(root);
-
-  try {
-    const files = await collectWorkflowFiles([]);
-    assertEquals(files, [".github/workflows/ci.yml"]);
-  } finally {
-    Deno.chdir(previousCwd);
-    await Deno.remove(root, { recursive: true });
-  }
+Deno.test("readStdin returns the piped yaml text", async () => {
+  const text = await readStdin(streamFromText("jobs: {}\n"));
+  assertEquals(text, "jobs: {}\n");
 });
 
 Deno.test("main returns 1 when diagnostics are found", async () => {
-  const root = await Deno.makeTempDir();
-  await Deno.writeTextFile(
-    `${root}/ci.yml`,
-    `jobs:\n  test:\n    runs-on: ubuntu-latest\n`,
-  );
-
   const stderr: string[] = [];
   const restore = console.error;
   console.error = (...args: unknown[]) => {
@@ -110,13 +102,15 @@ Deno.test("main returns 1 when diagnostics are found", async () => {
   };
 
   try {
-    const exitCode = await main([`${root}/ci.yml`]);
+    const exitCode = await main(
+      [".github/workflows/ci.yml"],
+      streamFromText(`jobs:\n  test:\n    runs-on: ubuntu-latest\n`),
+    );
     assertEquals(exitCode, 1);
     assertEquals(stderr, [
-      `${root}/ci.yml: jobs.test: runs-on job is missing timeout-minutes`,
+      ".github/workflows/ci.yml: jobs.test: runs-on job is missing timeout-minutes",
     ]);
   } finally {
     console.error = restore;
-    await Deno.remove(root, { recursive: true });
   }
 });

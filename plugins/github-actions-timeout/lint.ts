@@ -82,54 +82,24 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
   return diagnostics;
 }
 
-function isWorkflowFile(path: string): boolean {
-  return path.endsWith(".yml") || path.endsWith(".yaml");
-}
-
-export async function collectWorkflowFiles(inputPaths: string[]): Promise<string[]> {
-  const candidates = inputPaths.length === 0 ? [".github/workflows"] : inputPaths;
-  const files = new Set<string>();
-
-  for (const inputPath of candidates) {
-    const stat = await Deno.stat(inputPath);
-
-    if (stat.isFile) {
-      if (isWorkflowFile(inputPath)) {
-        files.add(inputPath);
-      }
-      continue;
-    }
-
-    for await (const entry of Deno.readDir(inputPath)) {
-      const childPath = `${inputPath}/${entry.name}`;
-      if (entry.isFile && isWorkflowFile(childPath)) {
-        files.add(childPath);
-      }
-    }
-  }
-
-  return [...files].sort();
-}
-
-export async function lintFiles(paths: string[]): Promise<Diagnostic[]> {
-  const workflowFiles = await collectWorkflowFiles(paths);
-  const diagnostics: Diagnostic[] = [];
-
-  for (const filePath of workflowFiles) {
-    const text = await Deno.readTextFile(filePath);
-    diagnostics.push(...lintWorkflowText(text, filePath));
-  }
-
-  return diagnostics;
+export async function readStdin(
+  stream: ReadableStream<Uint8Array> = Deno.stdin.readable,
+): Promise<string> {
+  return await new Response(stream).text();
 }
 
 function formatDiagnostic(diagnostic: Diagnostic): string {
   return `${diagnostic.filePath}: jobs.${diagnostic.jobName}: ${diagnostic.message}`;
 }
 
-export async function main(args: string[]): Promise<number> {
+export async function main(
+  args: string[],
+  stream: ReadableStream<Uint8Array> = Deno.stdin.readable,
+): Promise<number> {
   try {
-    const diagnostics = await lintFiles(args);
+    const filePath = args[0] ?? "<stdin>";
+    const text = await readStdin(stream);
+    const diagnostics = lintWorkflowText(text, filePath);
 
     if (diagnostics.length === 0) {
       console.log("github-actions-timeout: OK");
@@ -142,11 +112,6 @@ export async function main(args: string[]): Promise<number> {
 
     return 1;
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
-      console.error(`github-actions-timeout: path not found: ${error.message}`);
-      return 2;
-    }
-
     if (error instanceof Error) {
       console.error(`github-actions-timeout: ${error.message}`);
       return 2;
