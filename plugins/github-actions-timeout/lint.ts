@@ -29,34 +29,48 @@ function stripComments(line: string): string {
   return line;
 }
 
-function countIndent(line: string): number {
-  let indent = 0;
-  while (indent < line.length && line[indent] === " ") {
-    indent += 1;
-  }
-  return indent;
-}
-
 function parseKey(
   line: string,
 ): { indent: number; key: string; value: string } | null {
-  if (/^\s*[-?]/.test(line)) {
-    return null;
-  }
-
   const withoutComments = stripComments(line).replace(/\r$/, "");
-  if (!withoutComments.trim()) {
+  const indent = withoutComments.match(/^\s*/)?.[0].length ?? 0;
+  const content = withoutComments.slice(indent);
+
+  if (!content.trim() || content.startsWith("-") || content.startsWith("?")) {
     return null;
   }
 
-  const match = withoutComments.match(/^(\s*)([^:#][^:]*?):(?:\s*(.*))?$/);
-  if (!match) {
+  let quote: "'" | '"' | null = null;
+  let separatorIndex = -1;
+
+  for (let i = 0; i < content.length; i += 1) {
+    const char = content[i];
+
+    if (
+      (char === '"' || char === "'") && (i === 0 || content[i - 1] !== "\\")
+    ) {
+      quote = quote === char ? null : quote ?? char;
+      continue;
+    }
+
+    if (char === ":" && quote === null) {
+      separatorIndex = i;
+      break;
+    }
+  }
+
+  if (separatorIndex === -1) {
     return null;
   }
 
-  const [, spaces, rawKey, rawValue = ""] = match;
-  const key = rawKey.trim().replace(/^['"]|['"]$/g, "");
-  return { indent: spaces.length, key, value: rawValue.trim() };
+  const rawKey = content.slice(0, separatorIndex).trim();
+  if (!rawKey) {
+    return null;
+  }
+
+  const key = rawKey.replace(/^['"]|['"]$/g, "");
+  const value = content.slice(separatorIndex + 1).trim();
+  return { indent, key, value };
 }
 
 function parseJobs(text: string): Map<string, WorkflowJobSummary> {
@@ -139,6 +153,10 @@ function isPositiveIntegerLiteral(value: string | undefined): boolean {
   return value !== undefined && /^[1-9]\d*$/.test(value);
 }
 
+function isExpression(value: string | undefined): boolean {
+  return value !== undefined && /^\$\{\{[\s\S]+\}\}$/.test(value);
+}
+
 export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
   const jobs = parseJobs(text);
   const diagnostics: Diagnostic[] = [];
@@ -155,12 +173,14 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
 
     if (
       job.hasRunsOn && job.timeoutValue !== undefined &&
+      !isExpression(job.timeoutValue) &&
       !isPositiveIntegerLiteral(job.timeoutValue)
     ) {
       diagnostics.push({
         filePath,
         jobName,
-        message: "timeout-minutes must be a positive integer",
+        message:
+          "timeout-minutes must be a positive integer or GitHub Actions expression",
       });
     }
 
