@@ -77,6 +77,24 @@ Deno.test("supports quoted job keys with colons", () => {
   ]);
 });
 
+Deno.test("supports plain job keys with colons", () => {
+  const diagnostics = lintWorkflowText(
+    `jobs:
+  build:test:
+    runs-on: ubuntu-latest
+`,
+    "/repo/.github/workflows/ci.yml",
+  );
+
+  assertEquals(diagnostics, [
+    {
+      filePath: "/repo/.github/workflows/ci.yml",
+      jobName: "build:test",
+      message: "runs-on job is missing timeout-minutes",
+    },
+  ]);
+});
+
 Deno.test("ignores inline jobs mappings", () => {
   const diagnostics = lintWorkflowText(
     `jobs: {}

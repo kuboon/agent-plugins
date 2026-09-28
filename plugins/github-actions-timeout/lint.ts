@@ -54,8 +54,11 @@ function parseKey(
     }
 
     if (char === ":" && quote === null) {
-      separatorIndex = i;
-      break;
+      const next = content[i + 1];
+      if (next === undefined || /\s/.test(next)) {
+        separatorIndex = i;
+        break;
+      }
     }
   }
 
@@ -142,7 +145,7 @@ function parseJobs(text: string): Map<string, WorkflowJobSummary> {
     }
 
     if (key === "timeout-minutes") {
-      job.timeoutValue = value;
+      job.timeoutValue = value.trim();
     }
   }
 
@@ -162,7 +165,9 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
   for (const [jobName, job] of jobs) {
-    if (job.hasRunsOn && job.timeoutValue === undefined) {
+    const timeoutValue = job.timeoutValue?.trim();
+
+    if (job.hasRunsOn && timeoutValue === undefined) {
       diagnostics.push({
         filePath,
         jobName,
@@ -172,9 +177,9 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
     }
 
     if (
-      job.hasRunsOn && job.timeoutValue !== undefined &&
-      !isExpression(job.timeoutValue) &&
-      !isPositiveIntegerLiteral(job.timeoutValue)
+      job.hasRunsOn && timeoutValue !== undefined &&
+      !isExpression(timeoutValue) &&
+      !isPositiveIntegerLiteral(timeoutValue)
     ) {
       diagnostics.push({
         filePath,
@@ -184,7 +189,7 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
       });
     }
 
-    if (job.hasUses && job.timeoutValue !== undefined) {
+    if (job.hasUses && timeoutValue !== undefined) {
       diagnostics.push({
         filePath,
         jobName,
