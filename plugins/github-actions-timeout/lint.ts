@@ -10,6 +10,11 @@ type WorkflowJobSummary = {
   timeoutValue?: string;
 };
 
+type ParsedJobs = {
+  jobs: Map<string, WorkflowJobSummary>;
+  hasInlineJobsMapping: boolean;
+};
+
 function stripComments(line: string): string {
   let quote: "'" | '"' | null = null;
 
@@ -76,9 +81,10 @@ function parseKey(
   return { indent, key, value };
 }
 
-function parseJobs(text: string): Map<string, WorkflowJobSummary> {
+function parseJobs(text: string): ParsedJobs {
   const jobs = new Map<string, WorkflowJobSummary>();
   const lines = text.split("\n");
+  let hasInlineJobsMapping = false;
 
   let jobsIndent: number | null = null;
   let currentJobName: string | null = null;
@@ -96,6 +102,8 @@ function parseJobs(text: string): Map<string, WorkflowJobSummary> {
     if (jobsIndent === null) {
       if (key === "jobs" && value === "") {
         jobsIndent = indent;
+      } else if (key === "jobs") {
+        hasInlineJobsMapping = true;
       }
       continue;
     }
@@ -149,20 +157,44 @@ function parseJobs(text: string): Map<string, WorkflowJobSummary> {
     }
   }
 
-  return jobs;
+  return { jobs, hasInlineJobsMapping };
 }
 
 function isPositiveIntegerLiteral(value: string | undefined): boolean {
   return value !== undefined && /^[1-9]\d*$/.test(value);
 }
 
+function unquote(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+
+  return value;
+}
+
 function isExpression(value: string | undefined): boolean {
-  return value !== undefined && /^\$\{\{[\s\S]+\}\}$/.test(value);
+  return value !== undefined &&
+    /^\$\{\{[\s\S]+\}\}$/.test(unquote(value) ?? "");
 }
 
 export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
-  const jobs = parseJobs(text);
+  const { jobs, hasInlineJobsMapping } = parseJobs(text);
   const diagnostics: Diagnostic[] = [];
+
+  if (hasInlineJobsMapping) {
+    diagnostics.push({
+      filePath,
+      jobName: "jobs",
+      message: "inline jobs mappings are not supported by this linter",
+    });
+  }
 
   for (const [jobName, job] of jobs) {
     const timeoutValue = job.timeoutValue?.trim();

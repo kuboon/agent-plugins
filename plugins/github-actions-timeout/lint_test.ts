@@ -59,6 +59,19 @@ Deno.test("accepts GitHub Actions expressions for timeout-minutes", () => {
   assertEquals(diagnostics, []);
 });
 
+Deno.test("accepts quoted GitHub Actions expressions for timeout-minutes", () => {
+  const diagnostics = lintWorkflowText(
+    `jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: "\${{ inputs.timeout }}"
+`,
+    "/repo/.github/workflows/reusable.yml",
+  );
+
+  assertEquals(diagnostics, []);
+});
+
 Deno.test("supports quoted job keys with colons", () => {
   const diagnostics = lintWorkflowText(
     `jobs:
@@ -95,7 +108,7 @@ Deno.test("supports plain job keys with colons", () => {
   ]);
 });
 
-Deno.test("ignores inline jobs mappings", () => {
+Deno.test("rejects inline jobs mappings explicitly", () => {
   const diagnostics = lintWorkflowText(
     `jobs: {}
 name: CI
@@ -103,7 +116,13 @@ name: CI
     "/repo/.github/workflows/ci.yml",
   );
 
-  assertEquals(diagnostics, []);
+  assertEquals(diagnostics, [
+    {
+      filePath: "/repo/.github/workflows/ci.yml",
+      jobName: "jobs",
+      message: "inline jobs mappings are not supported by this linter",
+    },
+  ]);
 });
 
 Deno.test("reports runs-on jobs without timeout-minutes", () => {
