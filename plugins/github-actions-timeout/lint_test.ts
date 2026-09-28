@@ -1,6 +1,15 @@
-import { assertEquals } from "jsr:@std/assert@1.0.15";
-
 import { lintWorkflowText, main, readStdin } from "./lint.ts";
+
+function assertEquals(actual: unknown, expected: unknown): void {
+  const actualText = JSON.stringify(actual);
+  const expectedText = JSON.stringify(expected);
+
+  if (actualText !== expectedText) {
+    throw new Error(
+      `assertEquals failed\nactual:   ${actualText}\nexpected: ${expectedText}`,
+    );
+  }
+}
 
 function streamFromText(text: string): ReadableStream<Uint8Array> {
   const bytes = new TextEncoder().encode(text);
@@ -87,6 +96,22 @@ Deno.test("reports timeout-minutes on reusable-workflow caller jobs", () => {
       message: "reusable-workflow caller jobs cannot define timeout-minutes",
     },
   ]);
+});
+
+Deno.test("ignores nested timeout-minutes under a step", () => {
+  const diagnostics = lintWorkflowText(
+    `jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: ./scripts/wait.sh
+        timeout-minutes: 2
+`,
+    "/repo/.github/workflows/ci.yml",
+  );
+
+  assertEquals(diagnostics, []);
 });
 
 Deno.test("readStdin returns the piped yaml text", async () => {

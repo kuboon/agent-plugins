@@ -1,59 +1,150 @@
-import { parse } from "jsr:@std/yaml@1.0.7";
-
 export type Diagnostic = {
   filePath: string;
   jobName: string;
   message: string;
 };
 
-type Workflow = {
-  jobs?: Record<string, unknown>;
+type WorkflowJobSummary = {
+  hasRunsOn: boolean;
+  hasUses: boolean;
+  timeoutValue?: string;
 };
 
-type WorkflowJob = {
-  [key: string]: unknown;
-  "runs-on"?: unknown;
-  uses?: unknown;
-  "timeout-minutes"?: unknown;
-};
+function stripComments(line: string): string {
+  let quote: "'" | '"' | null = null;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
 
-function isPositiveInteger(value: unknown): boolean {
-  return Number.isInteger(value) && typeof value === "number" && value > 0;
-}
-
-export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
-  const document = parse(text) as Workflow;
-
-  if (!isRecord(document)) {
-    return [{ filePath, jobName: "<workflow>", message: "workflow must be a YAML mapping" }];
-  }
-
-  if (document.jobs === undefined) {
-    return [];
-  }
-
-  if (!isRecord(document.jobs)) {
-    return [{ filePath, jobName: "jobs", message: "jobs must be a mapping" }];
-  }
-
-  const diagnostics: Diagnostic[] = [];
-
-  for (const [jobName, rawJob] of Object.entries(document.jobs)) {
-    if (!isRecord(rawJob)) {
-      diagnostics.push({ filePath, jobName, message: "job definition must be a mapping" });
+    if ((char === '"' || char === "'") && (i === 0 || line[i - 1] !== "\\")) {
+      quote = quote === char ? null : quote ?? char;
       continue;
     }
 
-    const job = rawJob as WorkflowJob;
-    const hasRunsOn = job["runs-on"] !== undefined;
-    const hasUses = typeof job.uses === "string";
-    const timeout = job["timeout-minutes"];
+    if (char === "#" && quote === null) {
+      return line.slice(0, i);
+    }
+  }
 
-    if (hasRunsOn && timeout === undefined) {
+  return line;
+}
+
+function countIndent(line: string): number {
+  let indent = 0;
+  while (indent < line.length && line[indent] === " ") {
+    indent += 1;
+  }
+  return indent;
+}
+
+function parseKey(
+  line: string,
+): { indent: number; key: string; value: string } | null {
+  if (/^\s*[-?]/.test(line)) {
+    return null;
+  }
+
+  const withoutComments = stripComments(line).replace(/\r$/, "");
+  if (!withoutComments.trim()) {
+    return null;
+  }
+
+  const match = withoutComments.match(/^(\s*)([^:#][^:]*?):(?:\s*(.*))?$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, spaces, rawKey, rawValue = ""] = match;
+  const key = rawKey.trim().replace(/^['"]|['"]$/g, "");
+  return { indent: spaces.length, key, value: rawValue.trim() };
+}
+
+function parseJobs(text: string): Map<string, WorkflowJobSummary> {
+  const jobs = new Map<string, WorkflowJobSummary>();
+  const lines = text.split("\n");
+
+  let jobsIndent: number | null = null;
+  let currentJobName: string | null = null;
+  let currentJobIndent: number | null = null;
+  let currentPropertyIndent: number | null = null;
+
+  for (const rawLine of lines) {
+    const parsed = parseKey(rawLine);
+    if (!parsed) {
+      continue;
+    }
+
+    const { indent, key, value } = parsed;
+
+    if (jobsIndent === null) {
+      if (key === "jobs") {
+        jobsIndent = indent;
+      }
+      continue;
+    }
+
+    if (indent <= jobsIndent) {
+      currentJobName = null;
+      currentJobIndent = null;
+      currentPropertyIndent = null;
+      jobsIndent = key === "jobs" ? indent : null;
+      continue;
+    }
+
+    if (
+      currentJobName === null ||
+      (currentJobIndent !== null && indent <= currentJobIndent)
+    ) {
+      currentJobName = key;
+      currentJobIndent = indent;
+      currentPropertyIndent = null;
+      jobs.set(currentJobName, { hasRunsOn: false, hasUses: false });
+      continue;
+    }
+
+    if (currentJobIndent === null || indent <= currentJobIndent) {
+      continue;
+    }
+
+    if (currentPropertyIndent === null) {
+      currentPropertyIndent = indent;
+    }
+
+    if (indent !== currentPropertyIndent) {
+      continue;
+    }
+
+    const job = jobs.get(currentJobName);
+    if (!job) {
+      continue;
+    }
+
+    if (key === "runs-on") {
+      job.hasRunsOn = true;
+    }
+
+    if (key === "uses") {
+      job.hasUses = true;
+    }
+
+    if (key === "timeout-minutes") {
+      job.timeoutValue = value;
+    }
+  }
+
+  return jobs;
+}
+
+function isPositiveIntegerLiteral(value: string | undefined): boolean {
+  return value !== undefined && /^[1-9]\d*$/.test(value);
+}
+
+export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
+  const jobs = parseJobs(text);
+  const diagnostics: Diagnostic[] = [];
+
+  for (const [jobName, job] of jobs) {
+    if (job.hasRunsOn && job.timeoutValue === undefined) {
       diagnostics.push({
         filePath,
         jobName,
@@ -62,7 +153,10 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
       continue;
     }
 
-    if (hasRunsOn && timeout !== undefined && !isPositiveInteger(timeout)) {
+    if (
+      job.hasRunsOn && job.timeoutValue !== undefined &&
+      !isPositiveIntegerLiteral(job.timeoutValue)
+    ) {
       diagnostics.push({
         filePath,
         jobName,
@@ -70,7 +164,7 @@ export function lintWorkflowText(text: string, filePath: string): Diagnostic[] {
       });
     }
 
-    if (hasUses && timeout !== undefined) {
+    if (job.hasUses && job.timeoutValue !== undefined) {
       diagnostics.push({
         filePath,
         jobName,
