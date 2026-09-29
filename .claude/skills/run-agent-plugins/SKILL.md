@@ -77,8 +77,14 @@ claude plugin marketplace remove agent-plugins
 
 ## Test
 
-There is no unit-test suite. `driver.sh all` is the test: strict validation plus
-a full load/install/inventory round-trip.
+Two layers:
+
+- `driver.sh all` — strict validation plus a full load/install/inventory
+  round-trip, for every plugin.
+- `deno task test` — unit tests for the scripts that ship inside skills, from
+  the repo root. They live in `tests/<plugin>/`, never under `plugins/`:
+  `claude plugin install` copies the whole plugin directory and `apm install`
+  the whole skill directory, so anything placed there reaches every user.
 
 ## Gotchas
 

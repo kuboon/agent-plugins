@@ -59,6 +59,8 @@ value to pick (10 by default), why the default bites, and the two places the
 setting cannot go: there is no workflow-wide `defaults.timeout-minutes`, and a
 job that calls a reusable workflow rejects the key entirely — so a reusable
 workflow's own jobs must carry it, because no caller can add one afterwards.
+It also ships `scripts/lint.ts`, a Deno linter the skill runs after editing a
+workflow to catch a missing or invalid `timeout-minutes`.
 
 ### `deno-remix-init`
 

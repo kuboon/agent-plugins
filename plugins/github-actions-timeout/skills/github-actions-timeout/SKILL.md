@@ -94,17 +94,32 @@ names itself in the log instead of leaving you with "the job timed out".
 Fractional values are not supported; `timeout-minutes` must be a positive
 integer.
 
-## Reviewing an existing workflow
+## Checking workflows
+
+This skill ships a linter at `scripts/lint.ts`, beside this file. Run it after
+writing or editing a workflow, from the repository root:
 
 ```bash
-# every job that has no timeout-minutes
-rg -n '^\s{2}[a-z_-]+:$' -A6 .github/workflows/ | rg -v 'timeout-minutes'
+deno run --no-lock --allow-read=.github/workflows \
+  <this skill's directory>/scripts/lint.ts .github/workflows/*.y*ml
 ```
 
-Read it as a budget question, not a style one: for each job, what is the longest
-this should ever legitimately take, and what happens to the bill if it doesn't
-finish? If a job genuinely needs hours, that is fine — write the number and the
-reason, so the six-hour default is never what decides.
+It reports every job with a missing or invalid `timeout-minutes`, a
+`timeout-minutes` on a job that calls a reusable workflow, and a step timeout
+over 360. Exit status 1 means problems were found; 2 means a file could not be
+read or is not a workflow. Keep `--no-lock`: without it Deno records the
+linter's own dependency in the project's `deno.lock`. To check a single file
+with no permissions at all, pipe it in:
+
+```bash
+deno run --no-lock <this skill's directory>/scripts/lint.ts < workflow.yml
+```
+
+A clean run leaves the one judgment the linter cannot make. Read it as a budget
+question, not a style one: for each job, what is the longest this should ever
+legitimately take, and what happens to the bill if it doesn't finish? If a job
+genuinely needs hours, that is fine — write the number and the reason, so the
+six-hour default is never what decides.
 
 ## Checklist
 
