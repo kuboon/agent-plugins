@@ -2,8 +2,12 @@
 name: remix-v3-upgrade
 description: >-
   Upgrade a Remix v3 project across beta and rc boundaries — currently up to
-  `remix@3.0.0-rc.3`. Use this skill whenever bumping any `@remix-run/*`
+  `remix@3.0.0-rc.4`. Use this skill whenever bumping any `@remix-run/*`
   dependency, or when code that worked on an earlier release now misbehaves:
+  two copies of `@remix-run/ui` in a lockfile after an additive minor —
+  pulled in by a JSR package of your own whose range `deno outdated` never
+  looks at — a `clientEntry` prop newly typed `never`, a `createHref`
+  wildcard throwing on a `.` segment,
   `Type 'string' is not assignable to type 'UnsafeHTML'` on `innerHTML` /
   `srcDoc`, every signed-in user logged out after a deploy, a credentialed
   cross-origin request rejected over `Access-Control-Allow-Origin: *`, a
@@ -41,7 +45,7 @@ that look like your bug rather than a version skew.
 
 ## Which release to target
 
-**`remix@3.0.0-rc.3`** is the current `next` tag and the release to land on.
+**`remix@3.0.0-rc.4`** is the current `next` tag and the release to land on.
 
 The ladder has holes, so do not walk it one number at a time:
 
@@ -54,7 +58,8 @@ The ladder has holes, so do not walk it one number at a time:
 | `3.0.0-beta.10` | published, installs clean |
 | `3.0.0-rc.1` | published, installs clean |
 | `3.0.0-rc.2` | published, installs clean |
-| `3.0.0-rc.3` | published, installs clean — current `next` |
+| `3.0.0-rc.3` | published, installs clean |
+| `3.0.0-rc.4` | published, installs clean — current `next` |
 
 beta.9 pins `@remix-run/static-files-middleware@^0.1.0`, a renamed package that
 was never released — npm has only a `0.0.0` placeholder and the repo has no such
@@ -68,15 +73,173 @@ npm error notarget No matching version found for @remix-run/static-files-middlew
 beta.10 reverts that rename and stays on the established
 `@remix-run/static-middleware`. **Skip beta.9 entirely**; go beta.6 → beta.10.
 
-Five sections follow, newest boundary first. Work backwards to wherever the
+Six sections follow, newest boundary first. Work backwards to wherever the
 project sits, then apply them in order: [beta.5 → beta.6](#beta5--beta6) is the
 large one, [beta.6 → beta.10](#beta6--beta10) is small and mostly additive,
 [beta.10 → rc.1](#beta10--rc1) is small but contains a **silent** DOM-attribute
 rename that neither the compiler nor the runtime will report,
 [rc.1 → rc.2](#rc1--rc2) is mostly churn with one loud, compiler-caught break in
-`render-middleware`, and [rc.2 → rc.3](#rc2--rc3) is a security-hardening
-release whose breaks are mostly **runtime** — one compiler error, and half a
-dozen behaviour changes that report nothing.
+`render-middleware`, [rc.2 → rc.3](#rc2--rc3) is a security-hardening release
+whose breaks are mostly **runtime** — one compiler error, and half a dozen
+behaviour changes that report nothing — and [rc.3 → rc.4](#rc3--rc4) needs no
+code change at all, but is where a `ui` minor first splits the runtime in two
+through packages you publish yourself.
+
+## rc.3 → rc.4
+
+All 48 packages the meta-package pins move, but almost all of it is patch churn. Six take a minor
+bump:
+
+| Package | rc.3 | rc.4 | |
+| --- | --- | --- | --- |
+| **`@remix-run/ui`** | 0.10.0 | **0.11.0** | additive — but the range move is what bites (below) |
+| `@remix-run/route-pattern` | 0.24.1 | **0.25.0** | pathname wildcards reject `.` and `..` segments |
+| `@remix-run/assets` | 0.7.1 | **0.8.0** | additive: a file cache, a barrel-file import optimizer, source-map helpers |
+| `@remix-run/csrf-middleware` | 0.1.10 | **0.2.0** | not examined |
+| `@remix-run/fetch-proxy` | 0.8.6 | **0.9.0** | not examined |
+| `@remix-run/cli` | 0.7.1 | **0.8.0** | not examined |
+
+`@remix-run/data-table` is the one package that did not move at all (`0.6.0` both sides).
+
+**This section is not a full audit.** The three marked "not examined" were diffed at the version
+level only — a project that uses CSRF, the proxy, or the CLI should read their changelogs. What
+follows is what a site built from the `remix3-ssg-gh-pages` template actually runs into.
+
+### `ui@0.11.0` is additive
+
+Diffed against 0.10.0's published `.d.ts`:
+
+- `diffElementAttributes` is a new export.
+- `clientEntry` / `EntryComponent` / `SerializableProps` got **stricter props typing** —
+  `SerializableProps` is now a recursive mapped type that drops functions and class instances to
+  `never`, and `clientEntry<props>` rejects props that fail it. A page of islands with plain data
+  props compiles unchanged; one that passes a callback into an island stops compiling. That is the
+  only compiler-visible change, and it is a real bug being caught: a function prop was never going
+  to survive serialization into the hydration payload.
+- Frames gained an optional internal `getContext` field, so a component's context reaches across a
+  frame boundary. Nothing to do.
+- The mixin authoring API (`createMixin`, `MixinHandle`, `MixinFactory`, `MixinType`) is
+  **byte-identical apart from doc comments**. A mixin written against rc.3 keeps compiling.
+
+So the code change for this hop is usually **none**. The work is in the version ranges.
+
+### `route-pattern@0.25.0`: wildcards reject dot segments
+
+`createHref` now refuses a pathname wildcard value containing a `.` or `..` segment, and
+`CreateHrefError` gained an `invalid-pathname-wildcard` variant. Generated pathnames get exactly one
+leading slash; internal and trailing slashes are preserved. Only relevant if you build hrefs from a
+`*wildcard` with user-supplied path pieces — which is exactly where a traversal would have come
+from.
+
+### The trap — your own JSR packages resolve a second UI runtime
+
+This is the one that costs an afternoon, and rc.4 is where it first bites a template-derived site,
+because `ui` had not crossed a minor since the packages were written.
+
+`^0.11.0` does not include 0.10. Any package of yours that declares `@remix-run/ui@^0.10.0` — or
+`^0.9.0`, or any earlier range — keeps resolving its own copy after you move the app to rc.4. Two
+copies of the UI runtime, module-level state existing twice, **no error anywhere**.
+
+**`deno outdated` will not find it.** The stale range is not in your `deno.json`; it is inside a
+dependency's manifest. It surfaces in the lockfile's `jsr` section:
+
+```bash
+deno install
+python3 - <<'PY'
+import json
+lock = json.load(open("deno.lock"))
+print([k for k in lock.get("npm", {}) if "@remix-run/ui" in k])
+for name, entry in sorted(lock.get("jsr", {}).items()):
+    for dep in entry.get("dependencies", []):
+        if "@remix-run/" in dep:
+            print(f"{name} -> {dep}")
+PY
+```
+
+Two entries in the first line is the bug:
+
+```
+['@remix-run/ui@0.10.0', '@remix-run/ui@0.11.0']
+@kuboon/md@0.5.0            -> npm:@remix-run/ui@0.10
+@remix-kbn/helper-agent@0.1.1 -> npm:@remix-run/ui@0.11
+```
+
+Two more things about the lockfile, both of which will waste your time:
+
+- **`deno install` does not prune the stale entry.** After every consumer has moved, the old
+  `@remix-run/ui@0.10.0` block can still sit in the lock. Do not hand-edit it — find the package
+  that still requires it (the `jsr` section above says which), or it is genuinely orphaned and will
+  go on the next full resolve.
+- **Deleting `deno.lock` and reinstalling pulls unrelated churn.** A fresh resolve takes the newest
+  version inside every range, so an unrelated Markdown or build dependency moves in the same diff.
+  Prefer `deno outdated --update --compatible '@remix-run/*' --recursive`, which moves only the
+  floors you mean.
+
+#### Does the duplicate actually matter? Ask the module graph
+
+Before you block the upgrade on it, find out which graph the second copy is in. `deno info --json`
+answers per entry point:
+
+```bash
+for entry in client/entry.ts server/router.tsx; do
+  deno info --json "$entry" | python3 -c '
+import json, re, sys
+mods = [m.get("specifier", "") for m in json.load(sys.stdin).get("modules", [])]
+print(sorted({re.search(r"ui@([0-9.]+)", m).group(1) for m in mods if "remix-run/ui@" in m}))'
+done
+```
+
+For a static site this often comes back as `['0.11.0']` for the client and `['0.10.0', '0.11.0']`
+for the server. That means the second runtime is **build-time only** — it never ships to a browser,
+and the pages it produced are fine as long as the vnode shape did not change between the two
+versions (it did not, between 0.10 and 0.11). You can ship, and fix the range on its own schedule.
+If the duplicate is in the *client* graph, stop: two runtimes in one document is not a cosmetic
+problem.
+
+#### Fixing it
+
+Bumping each of your packages to `^0.11.0` and releasing them works, and you will do it again on
+every `ui` minor. The durable fix is for the library to stop importing the UI runtime at all and
+take the element factory as an argument:
+
+```diff
+- import { createElement } from "@remix-run/ui"
+-
+- export function hastToElement(tree: HastNodes): RemixNode {
++ export type CreateElement<Element> = (
++   type: string,
++   props: Record<string, unknown>,
++   ...children: unknown[]
++ ) => Element
++
++ export function hastToElement<Element>(
++   tree: HastNodes,
++   createElement: CreateElement<Element>,
++ ): ElementTree<Element> {
+```
+
+Remix's real `createElement` is assignable to that type as-is, and the result is assignable to
+`RemixNode`, so the call site grows by one argument and nothing else. The library then never
+appears in a version table again — and its tests no longer need a UI runtime, since a three-line
+fake factory drives them.
+
+The same reasoning does **not** apply to a stateless helper. `hast-util-to-dom` duplicated is
+harmless: there is no module-level state to split. Inject what must be a singleton — a UI runtime, a
+`document` — and leave plain converters alone.
+
+### Landing the hop
+
+Only the ranges that `^` excludes need editing — for most template-derived sites that is
+`@remix-run/ui` alone:
+
+```bash
+# edit "@remix-run/ui" to ^0.11.0 wherever it appears, then
+deno outdated --update --compatible '@remix-run/*' --recursive
+deno install
+deno task check && deno lint && deno fmt --check && deno task test
+```
+
+Then check the lock for a second `@remix-run/ui`, as above, before you build.
 
 ## rc.2 → rc.3
 
@@ -1130,14 +1293,14 @@ also pull unrelated majors — read its plan before accepting. If Deno refuses a
 version with "newer than the specified minimum dependency date", that is
 `minimumDependencyAge`, not a bad range; see the `deno-min-dep-age` skill.
 
-Pin the meta-package to an explicit release (`npm:remix@3.0.0-rc.3`). A bare
+Pin the meta-package to an explicit release (`npm:remix@3.0.0-rc.4`). A bare
 `npm:remix` resolves `latest`, which is **Remix v2** — v3 lives on the `next`
 tag.
 
 Order that avoids chasing type errors:
 
 1. Bump every `@remix-run/*` range in one pass, lockfile included. Land on
-   rc.3; never stop at beta.9, which cannot resolve.
+   rc.4; never stop at beta.9, which cannot resolve.
 2. Fix the data-table construction sites first — they are the loudest.
 3. Then the browser `resolveFrame` signature, which the compiler will *not*
    flag.
@@ -1158,12 +1321,31 @@ Order that avoids chasing type errors:
    `method-override-middleware`, `parseTar` on archives over 20 MiB, a custom
    data-table adapter compiling `order by`, and `parseFormData` on anything that
    is not multipart or url-encoded.
-9. Type-check, lint, test, and exercise link, form, and frame navigation in a
+9. For rc.4 there is nothing to edit but ranges — then read the lockfile's
+   `jsr` section for a second `@remix-run/ui`, which is the only thing that hop
+   breaks and the only place it shows.
+10. Type-check, lint, test, and exercise link, form, and frame navigation in a
    browser — the `resolveFrame` change, the form enhancement, beta.10's default
    resolver, the rc.1 attribute rename, and rc.3's prop filtering do not show up
    in unit tests.
 
 ## Checklist
+
+### Landing on rc.4
+
+- [ ] `remix` pinned to `3.0.0-rc.4` explicitly — not bare `npm:remix` (that is v2),
+      and not beta.9 (uninstallable).
+- [ ] **One `@remix-run/ui` in the lockfile.** Every package *you* publish that
+      depends on it moved to `^0.11.0` and was released, or better, stopped
+      importing it — `^0.11.0` excludes 0.10, `deno outdated` does not see the
+      stale range, and it only shows up in the lock's `jsr` section.
+- [ ] If a duplicate remains, `deno info --json` on each entry point says which
+      graph it is in. Client graph: blocking. Server/build graph only: shippable,
+      fix on its own schedule.
+- [ ] No `clientEntry` passes a function or class instance as a prop —
+      `ui@0.11.0` types those as `never`.
+- [ ] No `createHref` builds a pathname wildcard from path pieces that could
+      contain `.` or `..` — `route-pattern@0.25.0` throws now.
 
 ### Landing on rc.3
 
