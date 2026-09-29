@@ -231,20 +231,17 @@ async function run(args: string[], stdin?: string) {
   return { code, stdout: decode(stdout), stderr: decode(stderr) };
 }
 
-Deno.test("CLI: stdin needs no permissions and exits 0 when clean", async () => {
-  const r = await run(
-    [LINT],
-    "jobs:\n  a:\n    runs-on: x\n    timeout-minutes: 10\n",
-  );
-  assertEquals([r.code, r.stdout, r.stderr], [0, "ok: 1 job in 1 file", ""]);
+Deno.test("CLI: runs with no permissions and exits 0 when clean", async () => {
+  const r = await run([LINT], "jobs:\n  a:\n    runs-on: x\n    timeout-minutes: 10\n");
+  assertEquals([r.code, r.stdout, r.stderr], [0, "ok: 1 job", ""]);
 });
 
 Deno.test("CLI: problems exit 1", async () => {
   const r = await run([LINT], "jobs:\n  a:\n    runs-on: x\n");
   assertEquals(r.code, 1);
   assertEquals(r.stdout.split("\n"), [
-    "<stdin>: jobs.a: missing timeout-minutes (the default is 360)",
-    "1 problem in 1 file",
+    "jobs.a: missing timeout-minutes (the default is 360)",
+    "1 problem",
   ]);
 });
 
@@ -255,22 +252,10 @@ Deno.test("CLI: unparsable or non-workflow input exits 2", async () => {
   }
 });
 
-Deno.test("CLI: files need --allow-read and are checked together", async () => {
-  const dir = await Deno.makeTempDir();
-  try {
-    await Deno.writeTextFile(`${dir}/ok.yml`, "jobs: { a: { runs-on: x, timeout-minutes: 5 } }\n");
-    await Deno.writeTextFile(`${dir}/bad.yml`, "jobs: { b: { runs-on: x } }\n");
-
-    const denied = await run([LINT, `${dir}/ok.yml`]);
-    assertEquals(denied.code, 2);
-
-    const r = await run([`--allow-read=${dir}`, LINT, `${dir}/ok.yml`, `${dir}/bad.yml`]);
-    assertEquals(r.code, 1);
-    assertEquals(r.stdout.split("\n"), [
-      `${dir}/bad.yml: jobs.b: missing timeout-minutes (the default is 360)`,
-      "1 problem in 2 files",
-    ]);
-  } finally {
-    await Deno.remove(dir, { recursive: true });
-  }
+Deno.test("CLI: an argument is refused instead of waiting on stdin", async () => {
+  // A path passed out of habit must not be read, and must not hang on a
+  // terminal's stdin either: it fails at once, before touching input.
+  const r = await run([LINT, ".github/workflows/ci.yml"]);
+  assertEquals(r.code, 2);
+  assertEquals(r.stdout, "");
 });

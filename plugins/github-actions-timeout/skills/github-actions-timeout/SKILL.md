@@ -96,24 +96,22 @@ integer.
 
 ## Checking workflows
 
-This skill ships a linter at `scripts/lint.ts`, beside this file. Run it after
-writing or editing a workflow, from the repository root:
+This skill ships a linter at `scripts/lint.ts`, beside this file. It reads one
+workflow from stdin and never opens a file, so it needs no permissions. Run it
+after writing or editing a workflow, once per file:
 
 ```bash
-deno run --no-lock --allow-read=.github/workflows \
-  <this skill's directory>/scripts/lint.ts .github/workflows/*.y*ml
+for f in .github/workflows/*.y*ml; do
+  echo "== $f"; deno run --no-lock <this skill's directory>/scripts/lint.ts < "$f"
+done
 ```
 
-It reports every job with a missing or invalid `timeout-minutes`, a
+It reports a job with a missing or invalid `timeout-minutes`, a
 `timeout-minutes` on a job that calls a reusable workflow, and a step timeout
-over 360. Exit status 1 means problems were found; 2 means a file could not be
-read or is not a workflow. Keep `--no-lock`: without it Deno records the
-linter's own dependency in the project's `deno.lock`. To check a single file
-with no permissions at all, pipe it in:
-
-```bash
-deno run --no-lock <this skill's directory>/scripts/lint.ts < workflow.yml
-```
+over 360. Exit status 1 means problems; 2 means the input is not a workflow.
+Keep `--no-lock`: without it Deno records the linter's own dependency in the
+project's `deno.lock`. Don't add `--allow-read` or pass a path — the linter takes
+no arguments and refuses one.
 
 A clean run leaves the one judgment the linter cannot make. Read it as a budget
 question, not a style one: for each job, what is the longest this should ever

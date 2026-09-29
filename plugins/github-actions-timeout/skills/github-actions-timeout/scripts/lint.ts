@@ -1,14 +1,15 @@
 /**
- * Checks GitHub Actions workflows for missing or invalid `timeout-minutes`.
+ * Checks one GitHub Actions workflow, read from stdin, for missing or invalid
+ * `timeout-minutes`.
  *
- *   deno run --no-lock --allow-read lint.ts .github/workflows/*.yml
  *   deno run --no-lock lint.ts < .github/workflows/ci.yml
  *
+ * It reads stdin only and never opens a file, so it runs with no permissions.
  * `--no-lock` keeps the caller's deno.lock untouched when this runs inside
- * their project. Reading stdin needs no permissions at all.
+ * their project.
  *
- * Exit status: 0 clean, 1 problems found, 2 a file could not be read, parsed,
- * or is not a workflow.
+ * Exit status: 0 clean, 1 problems found, 2 input that is not a workflow, or
+ * an argument (there are none; pipe the workflow in).
  */
 // This file ships on its own, without a deno.json, and Deno looks for config
 // from the working directory rather than beside the script, so an import map
@@ -116,35 +117,24 @@ export function lintWorkflow(text: string): Result {
 }
 
 async function main(args: string[]): Promise<number> {
-  const sources = args.length > 0 ? args : ["-"];
-  let problemCount = 0;
-  let jobCount = 0;
-  let failed = false;
-
-  for (const source of sources) {
-    const label = source === "-" ? "<stdin>" : source;
-    try {
-      const text = source === "-"
-        ? await new Response(Deno.stdin.readable).text()
-        : await Deno.readTextFile(source);
-      const { jobs, problems } = lintWorkflow(text);
-      jobCount += jobs;
-      problemCount += problems.length;
-      for (const p of problems) console.log(`${label}: ${p.path}: ${p.message}`);
-    } catch (error) {
-      failed = true;
-      const message = error instanceof Error ? error.message.split("\n")[0] : String(error);
-      console.error(`${label}: ${message}`);
-    }
+  if (args.length > 0) {
+    console.error(
+      "usage: deno run --no-lock lint.ts < workflow.yml  (stdin only; takes no arguments)",
+    );
+    return 2;
   }
-
-  const files = `${sources.length} file${sources.length === 1 ? "" : "s"}`;
-  if (problemCount > 0) {
-    console.log(`${problemCount} problem${problemCount === 1 ? "" : "s"} in ${files}`);
-  } else if (!failed) {
-    console.log(`ok: ${jobCount} job${jobCount === 1 ? "" : "s"} in ${files}`);
+  try {
+    const { jobs, problems } = lintWorkflow(await new Response(Deno.stdin.readable).text());
+    for (const p of problems) console.log(`${p.path}: ${p.message}`);
+    const n = problems.length;
+    console.log(
+      n > 0 ? `${n} problem${n === 1 ? "" : "s"}` : `ok: ${jobs} job${jobs === 1 ? "" : "s"}`,
+    );
+    return n > 0 ? 1 : 0;
+  } catch (error) {
+    console.error(error instanceof Error ? error.message.split("\n")[0] : String(error));
+    return 2;
   }
-  return failed ? 2 : problemCount > 0 ? 1 : 0;
 }
 
 if (import.meta.main) Deno.exit(await main(Deno.args));
