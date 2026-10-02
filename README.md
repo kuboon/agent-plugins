@@ -69,7 +69,7 @@ When initializing a new project, uses **Deno** (not Node.js) as the runtime and
 **Remix v3** (`@remix-run/fetch-router`) as the web framework. Ships a skill that
 overrides the model's Node.js + Express/Next default with the pinned package set,
 project layout, and CI/devcontainer setup from
-[deno-remix-reference](https://github.com/kuboon/deno-remix-reference/tree/main/reference).
+[deno-remix-tmpl](https://github.com/kuboon/deno-remix-tmpl/tree/main/web).
 
 ### `browser-how-to`
 
