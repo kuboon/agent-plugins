@@ -8,8 +8,8 @@ description: >-
   (package.json vs deno.json), setting up a dev server, CI, or a devcontainer for
   a fresh project, or the user says "new project", "init", "scaffold", "setup",
   "boilerplate", or "start a web app". Model defaults to Node.js + Express/Next;
-  this skill overrides that. Follow the deno-remix-reference implementation:
-  https://github.com/kuboon/deno-remix-reference/tree/main/reference
+  this skill overrides that. Follow the deno-remix-tmpl template:
+  https://github.com/kuboon/deno-remix-tmpl/tree/main/web
 ---
 # Deno + Remix project initialization
 
@@ -18,8 +18,12 @@ reaches for **Node.js + npm** and a framework like **Express or Next.js**. This
 project's standard is **Deno** as the runtime and **Remix v3**
 (`@remix-run/fetch-router`) as the web framework. This skill overrides the habit.
 
-**Reference implementation** (mirror its layout and versions):
-<https://github.com/kuboon/deno-remix-reference/tree/main/reference>
+**Reference implementation** (mirror its layout and versions) is the GitHub
+template [`kuboon/deno-remix-tmpl`](https://github.com/kuboon/deno-remix-tmpl);
+the app is under
+[`web/`](https://github.com/kuboon/deno-remix-tmpl/tree/main/web). Prefer
+creating the project **from that template** and following its `TEMPLATE.md`
+(static vs. server mode, then the two init stages) over scaffolding by hand.
 
 ## Core rules
 
@@ -30,7 +34,7 @@ project's standard is **Deno** as the runtime and **Remix v3**
 2. **Web framework is Remix v3** — specifically the fetch-router stack
    (`@remix-run/fetch-router`, `@remix-run/ui` for JSX SSR). Not Express, not
    Next.js, not React Router SPA. Routes are declared in a `routes.ts` and wired
-   to controllers in a `router.ts`.
+   to controllers in a `router.tsx`.
 3. **When unsure of the exact shape, read the reference repo** rather than
    inventing an API. The Remix v3 fetch-router API is new and not in model
    memory; guessing produces plausible-but-wrong code.
@@ -38,81 +42,44 @@ project's standard is **Deno** as the runtime and **Remix v3**
    Streams, `Deno.serve`, Deno KV) over Node built-ins. Reach for a Node API
    only when there is no Web equivalent.
 
-## Project layout (from the reference)
+## Project layout (from the template)
 
-A Deno **workspace** with one member per package/app:
+A Deno **workspace**; the app is two members, one for each side of the wire:
 
 ```
-deno.json                 # workspace root: members, tasks, unstable flags
+deno.json                 # workspace root: members, tasks, imports (all of them), unstable flags
 packages/                 # reusable libraries (each its own deno.json)
-reference/  (your app)
-  server/                 # Remix v3 fetch-router: router.ts, routes.ts, controllers/
-  client/                 # browser entry, hydrated by @remix-run/ui run()
-  bundler/                # Deno.bundle + Tailwind build -> bundled/
-  tests/
+web/
+  client/                 # everything the browser is given: routes.ts, pages/, islands/, layout.tsx,
+                          #   static/ — type-checked WITHOUT deno.ns, so no `Deno.` in here
+  server/                 # router.tsx, assets.ts (Deno.bundle of client/), controllers/, config.ts
+  tests/                  # browser smoke tests
 ```
 
-### Root `deno.json`
+`server/router.tsx` default-exports a plain `@remix-run/fetch-router` router.
+`deno serve` runs it live (Deno Deploy); `@remix-kbn/ssg` can crawl the same
+object into static HTML for GitHub Pages. Imports are declared once, in the root
+`deno.json` — the members have none.
 
-```jsonc
-{
-  "workspace": ["./packages/kv", "./server", "./client", "./bundler"],
-  "tasks": {
-    "dev": "deno task --cwd server dev",
-    "test": "deno test -P",
-    "check": "deno check && deno lint && deno fmt --check"
-  },
-  "nodeModulesDir": "auto",
-  "unstable": ["bundle", "kv"],
-  "compilerOptions": { "jsx": "react-jsx", "jsxImportSource": "@remix-run/ui" }
-}
-```
-
-### Server `deno.json` — pinned Remix v3 packages
-
-Use these versions (captured from the reference, verified to resolve &
-type-check on Deno 2.9). Bump only deliberately.
-
-```jsonc
-{
-  "tasks": {
-    "dev": "deno task bundle && deno serve -P --watch ./router.ts",
-    "serve": "deno serve -P ./router.ts"
-  },
-  "compilerOptions": {
-    "lib": ["deno.ns", "deno.unstable", "dom"],
-    "jsx": "react-jsx",
-    "jsxImportSource": "@remix-run/ui"
-  },
-  "imports": {
-    "@std/assert": "jsr:@std/assert@^1.0.19",
-    "@remix-run/ui": "npm:@remix-run/ui@^0.1.1",
-    "@remix-run/fetch-router": "npm:@remix-run/fetch-router@0.18.2",
-    "@remix-run/response": "npm:@remix-run/response@0.3.3",
-    "@remix-run/session": "npm:@remix-run/session@^0.4.1",
-    "@remix-run/static-middleware": "npm:@remix-run/static-middleware@0.4.8",
-    "@remix-run/logger-middleware": "npm:@remix-run/logger-middleware@0.2.1",
-    "@remix-run/cors-middleware": "npm:@remix-run/cors-middleware@0.1.2",
-    "@remix-run/html-template": "npm:@remix-run/html-template@0.3.0"
-  },
-  "permissions": { "default": { "env": [], "net": ["localhost", "127.0.0.1"], "read": ["../bundled"] } }
-}
-```
+**Pin exactly what the template pins.** Several Remix v3 packages break silently
+when floated (for example `@remix-run/render-middleware@0.3.3` renders an empty
+`<body>` with `@remix-run/ui@0.11`). Copy the root `deno.json` `imports` from the
+template instead of choosing versions.
 
 ## Minimal server (verified: boots and serves HTTP 200)
 
-`server/routes.ts`:
+`client/routes.ts` (routes live in `client/` because pages link with `routes.x.href()`):
 
 ```ts
 import { get, route } from "@remix-run/fetch-router/routes";
 export const routes = route({ home: get("/") });
 ```
 
-`server/router.ts`:
+`server/router.tsx`:
 
 ```ts
 import { createRouter } from "@remix-run/fetch-router";
-import { routes } from "./routes.ts";
+import { routes } from "../client/routes.ts";
 
 const router = createRouter();
 router.get(routes.home, {
@@ -128,23 +95,26 @@ export default router;
 Run it:
 
 ```bash
-deno serve -P ./server/router.ts     # default: http://0.0.0.0:8000/
+deno serve -P ./server/router.tsx    # default: http://0.0.0.0:8000/
 ```
 
 `deno serve` expects the module to `export default` a router (which is a fetch
-handler). Add real pages by giving each route a controller and rendering JSX
-with `@remix-run/ui`; see the reference `server/controllers/` and
-`server/utils/render.tsx` for the SSR-shell + `<Frame>` streaming pattern.
+handler). Real pages are `client/pages/*.tsx` components mapped by a
+`createController(routes, …)` in `server/router.tsx`; see the template's
+`web/server/router.tsx` for the full wiring (assets, rendering, static files).
 
-## UI: Tailwind v4 + daisyUI, SSR-first
+## UI: `@remix-run/ui`, SSR-first
 
-- JSX is server-rendered via `@remix-run/ui` (`renderToStream`), then hydrated
-  in the browser by `run()` from `@remix-run/ui` (see `client/hydration.ts`).
-- Styling is **Tailwind CSS v4 + daisyUI** (`npm:tailwindcss@^4`,
-  `npm:daisyui@^5`), built into `bundled/` by the `bundler/` package using
-  `Deno.bundle` for JS and `@kuboon/tailwindcss-deno` for CSS.
+- JSX is server-rendered through the `render({ assets })` middleware
+  (`@remix-run/render-middleware`), then hydrated in the browser by `run()` from
+  `@remix-run/ui`. Interactive pieces are islands: `clientEntry(import.meta.url,
+  function Name…)` files under `web/client/islands/`, compiled as one code-split
+  graph by `@remix-kbn/assets-deno`.
+- Styling is `css()` mixins from `@remix-run/ui` plus the design tokens in
+  `web/client/tokens.ts` and `static/app.css` — no Tailwind, no daisyUI, no
+  separate bundler package.
 - Use `class=` (not `className=`) in JSX — `@remix-run/ui` uses HTML attribute
-  names.
+  names — and `mix={[…]}` for mixins and event handlers.
 
 ## Web / CI / devcontainer setup
 
@@ -202,7 +172,6 @@ extension (`denoland.vscode-deno`). See the reference `.devcontainer/`.
   tasks run with `-P` to use the configured default permission set.
 - `deno serve` needs a `export default` router; a bare `Deno.serve(...)` call in
   the module will not be picked up by `deno serve`.
-- The Remix v3 fetch-router / `@remix-run/ui` APIs are pre-1.0 and pinned to
-  exact versions in the reference (`0.18.2`, `0.3.3`, …). Do not float them to a
-  guessed newer version — copy the pins above or read the reference's current
-  `deno.json`.
+- The Remix v3 fetch-router / `@remix-run/ui` APIs are pre-1.0 and pinned in the
+  template. Do not float them to a guessed newer version — copy the pins from the
+  template's root `deno.json`.
