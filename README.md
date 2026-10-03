@@ -18,7 +18,8 @@ apm install -g kuboon/agent-plugins
 
 `-g` installs to user scope; the `apm.yml` here enumerates every skill, so all of
 them land in `~/.claude/skills/`. Add a skill to the repo, add one line to
-`apm.yml`, and the next `apm install -g` picks it up.
+`apm.yml`, and the next `apm install -g` picks it up. The `session-title-repo`
+hook is listed there too, so it lands in `~/.claude/settings.json`.
 
 ### Or per-plugin, using the `claude` CLI (the non-interactive equivalent)
 
@@ -277,5 +278,7 @@ sets the title when a session starts. It does not run on `resume`, so a name you
 changed by hand survives resuming. It does run on `startup` even when you pass
 `claude -n <name>`, and replaces that name.
 
-> A hook, not a skill, so it is a marketplace plugin only — `apm.yml` lists
-> skills and does not install it.
+> `apm install -g kuboon/agent-plugins` installs it too: APM reads the plugin's
+> `hooks/hooks.json`, copies the script to `~/.claude/hooks/session-title-repo/`
+> and merges the `SessionStart` entry into `~/.claude/settings.json` (verified
+> with APM 0.33.0).
