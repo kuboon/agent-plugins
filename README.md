@@ -38,6 +38,7 @@ claude plugin install remix-db-migrations-deno@agent-plugins
 claude plugin install stacked-prs@agent-plugins
 claude plugin install ios-standalone-status-bar@agent-plugins
 claude plugin install game-feel@agent-plugins
+claude plugin install session-title-repo@agent-plugins
 ```
 
 ## Plugins
@@ -256,3 +257,25 @@ what to keep (`viewport-fit=cover`, safe-area insets, the legacy
 `display-mode: standalone` height workaround), and the gotcha that makes the fix
 look broken — **iOS caches these tags with the Home Screen icon**, so an existing
 install keeps the old behavior until the icon is deleted and re-added.
+
+### `session-title-repo`
+
+Names every new session after its **main git repository**, so the session list
+(the left panel in the desktop app and claude.ai, `/resume`, `claude --resume`)
+says which repo each session belongs to instead of showing a bare
+auto-generated title. It automates the habit of running `/rename <repo>` by hand.
+
+Ships a `SessionStart` hook (matcher `startup`) that prints
+`hookSpecificOutput.sessionTitle` — the same effect as `/rename`. The name comes
+from the `origin` remote, falling back to the main worktree's directory via
+`git rev-parse --git-common-dir`, so a session started inside a linked worktree
+still gets the main repository's name. Outside a git repository it prints
+nothing and leaves the title alone.
+
+`/rename` itself fires no hook, so this cannot rewrite a name you type; it only
+sets the title when a session starts. It does not run on `resume`, so a name you
+changed by hand survives resuming. It does run on `startup` even when you pass
+`claude -n <name>`, and replaces that name.
+
+> A hook, not a skill, so it is a marketplace plugin only — `apm.yml` lists
+> skills and does not install it.

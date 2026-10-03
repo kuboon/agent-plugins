@@ -81,6 +81,11 @@
       "name": "game-feel",
       "source": "./plugins/game-feel",
       "description": "Add game feel / juice — screen shake, hit-stop, easing, squash & stretch, knockback, layered feedback — as engine-neutral techniques. Vendored from gamedev-skills/awesome-gamedev-agent-skills under Apache-2.0."
+    },
+    {
+      "name": "session-title-repo",
+      "source": "./plugins/session-title-repo",
+      "description": "Name every new session after its main git repository with a SessionStart hook, so the session list shows which repo each one belongs to. Worktrees resolve to the main repository's name."
     }
   ]
 }
