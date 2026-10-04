@@ -1,7 +1,8 @@
 name: agent-plugins-skills
 version: 1.0.0
 description: >-
-  Install every skill in this repo into user scope (~/.claude/skills/) with one
+  Install every skill (and the session-title-repo hook) in this repo into user
+  scope (~/.claude/) with one
   `apm install -g kuboon/agent-plugins`. Coexists with the Claude Code plugin
   marketplace (.claude-plugin/marketplace.json); this manifest is the APM entry.
 author: Ohkubo KOHEI
@@ -23,5 +24,6 @@ dependencies:
     - kuboon/agent-plugins/plugins/stacked-prs/skills/stacked-prs
     - kuboon/agent-plugins/plugins/ios-standalone-status-bar/skills/ios-standalone-status-bar
     - kuboon/agent-plugins/plugins/game-feel/skills/game-feel
+    - kuboon/agent-plugins/plugins/session-title-repo
   mcp: []
 includes: auto
