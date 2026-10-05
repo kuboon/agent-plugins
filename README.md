@@ -273,6 +273,15 @@ from the `origin` remote, falling back to the main worktree's directory via
 still gets the main repository's name. Outside a git repository it prints
 nothing and leaves the title alone.
 
+**Cloud sessions** (claude.ai / desktop app, `CLAUDE_CODE_REMOTE=true`) ignore
+`sessionTitle`: the hook runs, but the session keeps the title claude.ai
+generated from the first message. There the hook also returns
+`additionalContext` asking the model to call `set_session_title`
+(claude-code-remote MCP server) in its first turn with
+`<repo>: <a few words summarizing the first request>`. That depends on the
+model following the instruction and on the claude-code-remote tools being
+available; the title changes during the first reply, not before it.
+
 `/rename` itself fires no hook, so this cannot rewrite a name you type; it only
 sets the title when a session starts. It does not run on `resume`, so a name you
 changed by hand survives resuming. It does run on `startup` even when you pass
