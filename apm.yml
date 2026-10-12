@@ -25,5 +25,6 @@ dependencies:
     - kuboon/agent-plugins/plugins/ios-standalone-status-bar/skills/ios-standalone-status-bar
     - kuboon/agent-plugins/plugins/game-feel/skills/game-feel
     - kuboon/agent-plugins/plugins/session-title-repo
+    - kuboon/agent-plugins/plugins/invoker-commands/skills/invoker-commands
   mcp: []
 includes: auto

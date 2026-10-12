@@ -40,6 +40,7 @@ claude plugin install stacked-prs@agent-plugins
 claude plugin install ios-standalone-status-bar@agent-plugins
 claude plugin install game-feel@agent-plugins
 claude plugin install session-title-repo@agent-plugins
+claude plugin install invoker-commands@agent-plugins
 ```
 
 ## Plugins
@@ -291,3 +292,16 @@ changed by hand survives resuming. It does run on `startup` even when you pass
 > `hooks/hooks.json`, copies the script to `~/.claude/hooks/session-title-repo/`
 > and merges the `SessionStart` entry into `~/.claude/settings.json` (verified
 > with APM 0.33.0).
+
+### `invoker-commands`
+
+When a button opens, closes or toggles a `<dialog>` or a `popover` — or makes
+another element do something — declares it with the
+[Invoker Commands API](https://developer.mozilla.org/en-US/docs/Web/API/Invoker_Commands_API)
+(`<button commandfor="id" command="show-modal">`) instead of a `click`
+listener that calls `showModal()` / `close()` / `togglePopover()`. Ships a
+skill with the built-in command table, `close`/`request-close` passing the
+button's `value` to `dialog.returnValue`, `--custom` commands handled by the
+target's `command` event, and three traps verified on Chromium 141: a
+`commandfor` button inside a `<form>` does nothing without `type="button"`,
+the `command` event does not bubble, and it is cancelable.
