@@ -1,0 +1,10 @@
+{
+  "name": "invoker-commands",
+  "description": "Wire buttons that open/close dialogs and popovers (or trigger a custom action on another element) with the declarative Invoker Commands API — commandfor + command — instead of click listeners that call showModal()/close()/togglePopover().",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}

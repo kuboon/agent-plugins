@@ -86,6 +86,11 @@
       "name": "session-title-repo",
       "source": "./plugins/session-title-repo",
       "description": "Name every new session after its main git repository with a SessionStart hook, so the session list shows which repo each one belongs to. Worktrees resolve to the main repository's name."
+    },
+    {
+      "name": "invoker-commands",
+      "source": "./plugins/invoker-commands",
+      "description": "Wire buttons that open/close dialogs and popovers, or trigger custom actions on another element, with the declarative Invoker Commands API (commandfor + command) instead of click listeners."
     }
   ]
 }
