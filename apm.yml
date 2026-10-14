@@ -26,5 +26,6 @@ dependencies:
     - kuboon/agent-plugins/plugins/game-feel/skills/game-feel
     - kuboon/agent-plugins/plugins/session-title-repo
     - kuboon/agent-plugins/plugins/invoker-commands/skills/invoker-commands
+    - kuboon/agent-plugins/plugins/cloudflare-cf-cli/skills/cloudflare-cf-cli
   mcp: []
 includes: auto

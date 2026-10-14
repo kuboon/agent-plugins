@@ -1,0 +1,10 @@
+{
+  "name": "cloudflare-cf-cli",
+  "description": "Use Cloudflare's new cf CLI and cloudflare.config.ts instead of wrangler. When a project still uses wrangler.jsonc/wrangler.toml or wrangler commands, migrate it with cf migrate, including the Vite/React Router, secrets and CI traps of the 1.0.0-beta line.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}
