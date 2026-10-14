@@ -91,6 +91,11 @@
       "name": "invoker-commands",
       "source": "./plugins/invoker-commands",
       "description": "Wire buttons that open/close dialogs and popovers, or trigger custom actions on another element, with the declarative Invoker Commands API (commandfor + command) instead of click listeners."
+    },
+    {
+      "name": "cloudflare-cf-cli",
+      "source": "./plugins/cloudflare-cf-cli",
+      "description": "Use Cloudflare's cf CLI and cloudflare.config.ts instead of wrangler; migrate wrangler projects with cf migrate, including the Vite/React Router, secrets, Windows and CI traps of the 1.0.0-beta line."
     }
   ]
 }

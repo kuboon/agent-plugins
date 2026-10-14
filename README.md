@@ -41,6 +41,7 @@ claude plugin install ios-standalone-status-bar@agent-plugins
 claude plugin install game-feel@agent-plugins
 claude plugin install session-title-repo@agent-plugins
 claude plugin install invoker-commands@agent-plugins
+claude plugin install cloudflare-cf-cli@agent-plugins
 ```
 
 ## Plugins
@@ -305,3 +306,17 @@ button's `value` to `dialog.returnValue`, `--custom` commands handled by the
 target's `command` event, and three traps verified on Chromium 141: a
 `commandfor` button inside a `<form>` does nothing without `type="button"`,
 the `command` event does not bubble, and it is cancelable.
+
+### `cloudflare-cf-cli`
+
+Cloudflare Workers projects use the new **`cf` CLI** and a typed
+**`cloudflare.config.ts`** instead of wrangler; a project still on
+`wrangler.jsonc` gets migrated with `cf migrate`. Ships a skill with the
+migration steps (clearing the generated `assets.directory` throw, `ctx.isPreview`
+for preview environments, `bindings.secret()`, `cf workers types` and the
+`tsconfig` change), the wrangler → cf command table, and the traps of the
+`1.0.0-beta` line: `bindings.secret()` failing deploy as a required secret, the
+dev-server 404 fixed by `experimental: { newConfig: true }`, the React Router
+manifest ENOENT under the Build Output Specification, no `--var` on `cf deploy`,
+`spawn EFTYPE` on Windows for a Worker without Vite, and when to keep
+`wrangler.jsonc` (CI/E2E that read it, `wrangler tail`).
