@@ -90,9 +90,11 @@ mishandle.
 
 ## Runtime support & fallback
 
-- **Deno**: supported (verified on 2.9). **Node**: 22+. **Browsers**: shipped in
-  Safari 18.2+, Firefox 133+, and recent Chromium. Broadly available in modern
-  environments but not universal.
+- Per MDN browser-compat-data: **Deno** 2.5+ (verified on 2.9), **Node** 25+,
+  **Chrome/Edge** 140+, **Firefox** 133+, **Safari** 18.2+. Node 22 and 24
+  don't have them (`typeof Uint8Array.fromBase64` is `"undefined"` on 22.22),
+  so Node code that must run on an LTS before 25 needs the fallback below or
+  `Buffer`.
 - If you must support older targets, **feature-detect and fall back** rather than
   assuming absence:
 
