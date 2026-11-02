@@ -42,6 +42,7 @@ claude plugin install game-feel@agent-plugins
 claude plugin install session-title-repo@agent-plugins
 claude plugin install invoker-commands@agent-plugins
 claude plugin install cloudflare-cf-cli@agent-plugins
+claude plugin install x-player-card@agent-plugins
 ```
 
 ## Plugins
@@ -320,3 +321,17 @@ dev-server 404 fixed by `experimental: { newConfig: true }`, the React Router
 manifest ENOENT under the Build Output Specification, no `--var` on `cf deploy`,
 `spawn EFTYPE` on Windows for a Worker without Vite, and when to keep
 `wrangler.jsonc` (CI/E2E that read it, `wrangler tail`).
+
+### `x-player-card`
+
+Makes a link posted on **X (Twitter)** play inline with a **Player Card**: X
+loads a page of yours in an iframe inside the post. Ships a skill with the
+share-page / player-page split, the `twitter:player` meta tags (server-rendered,
+480×480, a square `twitter:image`), the player page's
+`Content-Security-Policy: frame-ancestors` header for x.com / twitter.com with
+no `X-Frame-Options`, what X's iframe sandbox breaks — verified on Chromium
+141: `alert()` ignored, `<form>` submission blocked, `frame-ancestors` in a
+`<meta>` ignored — and how to test now that the Card Validator is gone (curl
+as `Twitterbot`, a local sandboxed iframe, reposting with `?v=2` past X's
+cache). X's documentation for this is mostly gone; the rest comes from
+community reports and may change.

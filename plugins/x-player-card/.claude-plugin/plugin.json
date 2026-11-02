@@ -1,0 +1,10 @@
+{
+  "name": "x-player-card",
+  "description": "Embed a playable game, player or interactive widget in an X (Twitter) post with a Player Card: twitter:player meta tags on a server-rendered share page, a frameable player page (CSP frame-ancestors header) that works inside X's sandboxed iframe, and how to test it now that the card validator is gone.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}
