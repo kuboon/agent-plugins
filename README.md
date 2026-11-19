@@ -43,6 +43,7 @@ claude plugin install session-title-repo@agent-plugins
 claude plugin install invoker-commands@agent-plugins
 claude plugin install cloudflare-cf-cli@agent-plugins
 claude plugin install x-player-card@agent-plugins
+claude plugin install status-board@agent-plugins
 ```
 
 ## Plugins
@@ -335,3 +336,28 @@ no `X-Frame-Options`, what X's iframe sandbox breaks — verified on Chromium
 as `Twitterbot`, a local sandboxed iframe, reposting with `?v=2` past X's
 cache). X's documentation for this is mostly gone; the rest comes from
 community reports and may change.
+
+### `status-board`
+
+A **mod** (it changes Claude Code's own UI rather than adding a skill): a pane
+beside the conversation with a status board the model writes for the session,
+a one-line status above the prompt, and a per-prompt history of plans, steps,
+recaps, questions and linked pull requests. Its `hooks/hooks.json` loads a
+JavaScript module (`register.js`) through the mod runtime. A survey of the mod
+API calls it makes at the
+pinned commit found no network access, no commands run and no file writes: it reads
+the session transcript and keeps its state in the mod store. Building a board
+forks the conversation to the model (`$.model.fork`), so each board costs
+tokens (mostly cache reads). See the upstream README for the Claude Code
+version it needs.
+
+> **Not written here, and not copied.** Made by
+> [HolyGrail](https://github.com/HolyGrail) in
+> [`HolyGrail/claude-mods`](https://github.com/HolyGrail/claude-mods/tree/main/plugins/status-board).
+> That repository has **no license**, so its code cannot be redistributed; the
+> marketplace entry only points at it through a `git-subdir` source, and nothing
+> from it lives in this repository. The entry is **pinned by `sha`** to commit
+> `0898c6af82a89578cfcd8b8f9d8ffe80d3711fdd`, so upstream changes to the
+> JavaScript reach no one until that sha is bumped here after a review. It is
+> not in `apm.yml`: it has no skill, and a mod module is not something APM
+> installs.

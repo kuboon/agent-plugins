@@ -101,6 +101,16 @@
       "name": "x-player-card",
       "source": "./plugins/x-player-card",
       "description": "Embed a playable game or player in an X (Twitter) post with a Player Card: server-rendered twitter:player tags, a player page framed via CSP frame-ancestors that survives X's iframe sandbox, and testing without the retired validator."
+    },
+    {
+      "name": "status-board",
+      "source": {
+        "source": "git-subdir",
+        "url": "HolyGrail/claude-mods",
+        "path": "plugins/status-board",
+        "sha": "0898c6af82a89578cfcd8b8f9d8ffe80d3711fdd"
+      },
+      "description": "Shows a status board the model writes for this session, a one-line status above the prompt, and the per-prompt history of plans, steps, recaps, questions and linked pull requests. Sourced from HolyGrail/claude-mods, pinned to one commit; upstream has no license, so nothing is copied here."
     }
   ]
 }
