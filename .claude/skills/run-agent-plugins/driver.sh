@@ -44,6 +44,23 @@ validate() {
   log "All manifests valid ✔"
 }
 
+mod_modules_installed() {
+  python3 - "$1@${MARKET_NAME}" <<'PY'
+import json, os, sys
+home = os.path.expanduser("~/.claude/plugins")
+entries = json.load(open(os.path.join(home, "installed_plugins.json")))["plugins"].get(sys.argv[1], [])
+for entry in entries:
+    hooks = os.path.join(entry["installPath"], "hooks", "hooks.json")
+    if not os.path.isfile(hooks):
+        continue
+    modules = json.load(open(hooks)).get("modules") or []
+    if modules and all(os.path.isfile(os.path.join(entry["installPath"], "hooks", m)) for m in modules):
+        print(f"  Mod modules ({len(modules)}): {', '.join(modules)}")
+        sys.exit(0)
+sys.exit(1)
+PY
+}
+
 roundtrip() {
   # Ensure we always tear down, even on failure.
   cleanup() {
@@ -62,7 +79,10 @@ roundtrip() {
     log "Component inventory for $name"
     claude plugin details "$name" || fail "details failed: $name"
     # A plugin with zero components almost certainly means a broken skills/ layout.
+    # A mod (hooks/hooks.json holding {"modules": [...]}, such as status-board) is not counted by
+    # `details`, so for it check instead that every module file it names was installed.
     claude plugin details "$name" | grep -Eq 'Skills \([1-9]|Agents \([1-9]|Hooks \([1-9]|MCP servers \([1-9]' \
+      || mod_modules_installed "$name" \
       || fail "$name loaded with ZERO components — check skills/<name>/SKILL.md layout"
   done < <(python3 -c "import json;[print(p['name']) for p in json.load(open('.claude-plugin/marketplace.json'))['plugins']]")
 

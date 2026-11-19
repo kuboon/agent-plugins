@@ -115,3 +115,7 @@ Two layers:
 - Plugin installs but `details` shows all-zero components → the skill/agent
   files aren't where the plugin manifest expects; check the
   `skills/<name>/SKILL.md` path and frontmatter.
+- A **mod** (`hooks/hooks.json` holding `{"modules": [...]}`, such as
+  `status-board`) shows all-zero components in `details` even when it loaded.
+  The driver then checks that every module file it names was installed and
+  prints `Mod modules (n): ...` instead of failing.
