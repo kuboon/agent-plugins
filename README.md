@@ -43,6 +43,7 @@ claude plugin install session-title-repo@agent-plugins
 claude plugin install invoker-commands@agent-plugins
 claude plugin install cloudflare-cf-cli@agent-plugins
 claude plugin install x-player-card@agent-plugins
+claude plugin install later@agent-plugins
 claude plugin install status-board@agent-plugins
 ```
 
@@ -336,6 +337,17 @@ no `X-Frame-Options`, what X's iframe sandbox breaks — verified on Chromium
 as `Twitterbot`, a local sandboxed iframe, reposting with `?v=2` past X's
 cache). X's documentation for this is mostly gone; the rest comes from
 community reports and may change.
+
+### `later`
+
+A `/later <idea>` slash command for the moment a **next** task occurs to you
+while Claude is busy with the current one. It writes the idea up as a
+standalone prompt (repository, repo-relative files, the conversation context
+it depends on, what done looks like) and queues it as a **Suggested task card**
+via the `spawn_task` tool, so it can be started later as a fresh session with
+one click — then goes straight back to the current work. It never starts the
+parked task, and it runs only when you type `/later`. Where the card tool is
+unavailable, it prints the title and prompt in a block to copy instead.
 
 ### `status-board`
 
