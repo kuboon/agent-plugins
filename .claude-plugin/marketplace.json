@@ -103,6 +103,11 @@
       "description": "Embed a playable game or player in an X (Twitter) post with a Player Card: server-rendered twitter:player tags, a player page framed via CSP frame-ancestors that survives X's iframe sandbox, and testing without the retired validator."
     },
     {
+      "name": "later",
+      "source": "./plugins/later",
+      "description": "/later <idea> — park a next-task idea that came up mid-session as a Suggested task card (spawn_task) with a standalone prompt, without derailing the current work."
+    },
+    {
       "name": "status-board",
       "source": {
         "source": "git-subdir",

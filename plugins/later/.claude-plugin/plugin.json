@@ -1,0 +1,10 @@
+{
+  "name": "later",
+  "description": "/later <idea> — park a next-task idea that came up mid-session as a Suggested task card (spawn_task), with a standalone prompt, without derailing the current work.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}
