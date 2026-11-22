@@ -1,154 +1,110 @@
 ---
 name: remix-v3-upgrade
 description: >-
-  Upgrade a Remix v3 project across beta and rc boundaries — currently up to
-  `remix@3.0.0-rc.4`. Use this skill whenever bumping any `@remix-run/*`
-  dependency, or when code that worked on an earlier release now misbehaves:
-  two copies of `@remix-run/ui` in a lockfile after an additive minor —
-  pulled in by a JSR package of your own whose range `deno outdated` never
-  looks at — a `clientEntry` prop newly typed `never`, a `createHref`
-  wildcard throwing on a `.` segment,
-  `Type 'string' is not assignable to type 'UnsafeHTML'` on `innerHTML` /
-  `srcDoc`, every signed-in user logged out after a deploy, a credentialed
-  cross-origin request rejected over `Access-Control-Allow-Origin: *`, a
-  form that used to skip CSRF now refused, a `javascript:` href replaced by
-  a thrown error, an `on*` prop silently dropped, a tar archive newly
-  rejected for size or a `..` path, `update() does not allow a structurally
-  unconditional where clause`, `Cannot parse form data` where
-  `request.formData()` used to answer, `Property 'getScriptEntry' is
-  missing` from `render({ assets })`, a `405` where a route used to fall
-  through to the 404 handler, two copies of `@remix-run/ui` in a lockfile
-  after an additive bump, a nav link changing the URL without changing the
-  view, `rmx-*` attributes and `data-key` silently doing nothing (they
-  became `data-rmx-*` in `@remix-run/ui@0.8.0`), a custom element losing its
-  state on every frame reload, `addEventListeners` gone from
-  `@remix-run/ui`, `No matching version found for
-  @remix-run/static-files-middleware@^0.1.0` (that is beta.9, which cannot
-  install), `Type 'Middleware' is not assignable to type 'AnyMiddleware'`
-  from `staticFiles()`, links or forms suddenly navigating through frames,
-  `createDatabase` / `DatabaseAdapter` / `createSqliteDatabaseAdapter` gone
-  from `@remix-run/data-table`, `resolveFrame` receiving `undefined` for its
-  signal or target, `Route.href(params, searchParams)` /
-  `createHref(pattern, params, searchParams)` losing its query string, a
-  `ParseError` on a route pattern like `/:year-:month`, session cookies
-  unreadable from client JavaScript, `createAssetServer({ allow, deny })`
-  being ignored, or `remix-test` not found. Covers the package version table
-  for each boundary and every breaking change with before/after diffs.
+  Upgrade a Remix 3.x project (3.0.0 stable and later) to a newer 3.x release —
+  written for apps derived from kuboon/deno-remix-tmpl and the @remix-kbn/*
+  packages they consume. Use this skill whenever bumping any `@remix-run/*` or
+  `@remix-kbn/*` dependency, or when something that worked before a bump now
+  misbehaves: `@remix-run/ui` refusing to move past its 0.x minor because the
+  `remix` meta-package does not pin it, two copies of `@remix-run/component` in
+  a lockfile pulled in by a JSR package's stale range, `json()` columns read
+  back as strings or written twice-encoded, `timestamp()` filters that stop
+  matching on Turso, an upsert writing values into the wrong columns in a
+  hand-copied SQL compiler, `Expected 2 arguments, but got 3` from
+  `createScheduler()`, form handlers firing at hydration with
+  `isTrusted === false`, or a render error that used to answer 200 now
+  answering 500. Covers where to read the real changelogs (npm tarballs ship
+  none), the lockfile duplicate check, and the per-release notes from 3.3.0 on.
 ---
 
-# Remix v3 upgrades
+# Remix 3.x upgrades
 
-Remix v3 ships as ~45 independently versioned `@remix-run/*` packages; the
-`remix` meta-package pins a compatible set. Bump the whole set together — the
-packages are cross-pinned, and a half-upgraded lockfile produces type errors
-that look like your bug rather than a version skew.
+Remix 3 is stable and follows semver. The `remix` meta-package pins a set of
+~50 `@remix-run/*` packages, each versioned on its own (`component` 1.x,
+`data-table` 1.x, `fetch-router` 1.x, …). A 3.x minor is additive at the API
+level; what breaks is **behaviour** and **custom code that re-implements a
+contract** (a data-table adapter, a vendored compiler). The compiler and the
+test suite usually stay green through both.
 
-## Which release to target
+Nothing before 3.0.0 is covered here. Every project this skill is for is
+already on 3.x.
 
-**`remix@3.0.0-rc.4`** is the current `next` tag and the release to land on.
+## 1. Find the target set
 
-The ladder has holes, so do not walk it one number at a time:
-
-| Release | Status |
-| --- | --- |
-| `3.0.0-beta.6` | published |
-| `3.0.0-beta.7` | **never published** — `npm view` 404s |
-| `3.0.0-beta.8` | **never published** — `npm view` 404s |
-| `3.0.0-beta.9` | published but **uninstallable** (see below) |
-| `3.0.0-beta.10` | published, installs clean |
-| `3.0.0-rc.1` | published, installs clean |
-| `3.0.0-rc.2` | published, installs clean |
-| `3.0.0-rc.3` | published, installs clean |
-| `3.0.0-rc.4` | published, installs clean — current `next` |
-
-beta.9 pins `@remix-run/static-files-middleware@^0.1.0`, a renamed package that
-was never released — npm has only a `0.0.0` placeholder and the repo has no such
-directory. Any install of beta.9 dies at resolution:
-
-```
-npm error code ETARGET
-npm error notarget No matching version found for @remix-run/static-files-middleware@^0.1.0.
+```bash
+npm view remix dist-tags --json          # use `latest`
+npm view remix@<version> dependencies --json
 ```
 
-beta.10 reverts that rename and stays on the established
-`@remix-run/static-middleware`. **Skip beta.9 entirely**; go beta.6 → beta.10.
+- **Use `latest`.** The `next` dist-tag was left behind on `3.0.0-rc.5` and
+  points at an old release candidate. A bare `npm:remix` resolves 3.x now.
+- The `dependencies` of the meta-package are the floors to land on, e.g. for
+  3.3.0: `component ^1.3.0`, `data-table ^1.1.0`, `fetch-router ^1.0.1`,
+  `render-middleware ^1.1.1`, `spa ^1.0.3`, `cop-middleware ^1.0.1`,
+  `csp-middleware ^1.0.1`.
+- **`@remix-run/ui` is not in that set.** It is a separate 0.x package of
+  styled components and mixins (`animateLayout()`, `animateExit()`, `toast`,
+  `form`) that depends on `component`. Because it is 0.x, `^0.13.1` does not
+  admit 0.14.0, so `deno outdated --compatible` never moves it, and a stale
+  `ui` can hold a second, older `component` in the graph. Check it by hand:
 
-Six sections follow, newest boundary first. Work backwards to wherever the
-project sits, then apply them in order: [beta.5 → beta.6](#beta5--beta6) is the
-large one, [beta.6 → beta.10](#beta6--beta10) is small and mostly additive,
-[beta.10 → rc.1](#beta10--rc1) is small but contains a **silent** DOM-attribute
-rename that neither the compiler nor the runtime will report,
-[rc.1 → rc.2](#rc1--rc2) is mostly churn with one loud, compiler-caught break in
-`render-middleware`, [rc.2 → rc.3](#rc2--rc3) is a security-hardening release
-whose breaks are mostly **runtime** — one compiler error, and half a dozen
-behaviour changes that report nothing — and [rc.3 → rc.4](#rc3--rc4) needs no
-code change at all, but is where a `ui` minor first splits the runtime in two
-through packages you publish yourself.
+  ```bash
+  npm view @remix-run/ui version
+  npm view @remix-run/ui@latest dependencies --json   # which component it wants
+  ```
 
-## rc.3 → rc.4
+## 2. Read the changelogs — they are not in the tarball
 
-All 48 packages the meta-package pins move, but almost all of it is patch churn. Six take a minor
-bump:
+npm tarballs of `@remix-run/*` ship no `CHANGELOG.md`. Read them from the repo:
 
-| Package | rc.3 | rc.4 | |
-| --- | --- | --- | --- |
-| **`@remix-run/ui`** | 0.10.0 | **0.11.0** | additive — but the range move is what bites (below) |
-| `@remix-run/route-pattern` | 0.24.1 | **0.25.0** | pathname wildcards reject `.` and `..` segments |
-| `@remix-run/assets` | 0.7.1 | **0.8.0** | additive: a file cache, a barrel-file import optimizer, source-map helpers |
-| `@remix-run/csrf-middleware` | 0.1.10 | **0.2.0** | not examined |
-| `@remix-run/fetch-proxy` | 0.8.6 | **0.9.0** | not examined |
-| `@remix-run/cli` | 0.7.1 | **0.8.0** | not examined |
+```bash
+for p in remix component data-table fetch-router ui render-middleware; do
+  curl -fsSL -o CHANGELOG-$p.md \
+    https://raw.githubusercontent.com/remix-run/remix/main/packages/$p/CHANGELOG.md
+done
+```
 
-`@remix-run/data-table` is the one package that did not move at all (`0.6.0` both sides).
+Start with `remix`'s own changelog: it rolls every package's change up into one
+release entry. Then open the package changelog for anything the project
+touches. Read the **patch** entries too — in 3.x that is where the behaviour
+changes live.
 
-**This section is not a full audit.** The three marked "not examined" were diffed at the version
-level only — a project that uses CSRF, the proxy, or the CLI should read their changelogs. What
-follows is what a site built from the `remix3-ssg-gh-pages` template actually runs into.
+If the project carries code copied from an upstream package (a SQL compiler, a
+driver), also fetch upstream's **source** at the old and the new version and
+diff them: `npm pack @remix-run/<pkg>@<version>` and unpack each into its own
+directory.
 
-### `ui@0.11.0` is additive
+## 3. Bump and relock
 
-Diffed against 0.10.0's published `.d.ts`:
-
-- `diffElementAttributes` is a new export.
-- `clientEntry` / `EntryComponent` / `SerializableProps` got **stricter props typing** —
-  `SerializableProps` is now a recursive mapped type that drops functions and class instances to
-  `never`, and `clientEntry<props>` rejects props that fail it. A page of islands with plain data
-  props compiles unchanged; one that passes a callback into an island stops compiling. That is the
-  only compiler-visible change, and it is a real bug being caught: a function prop was never going
-  to survive serialization into the hydration payload.
-- Frames gained an optional internal `getContext` field, so a component's context reaches across a
-  frame boundary. Nothing to do.
-- The mixin authoring API (`createMixin`, `MixinHandle`, `MixinFactory`, `MixinType`) is
-  **byte-identical apart from doc comments**. A mixin written against rc.3 keeps compiling.
-
-So the code change for this hop is usually **none**. The work is in the version ranges.
-
-### `route-pattern@0.25.0`: wildcards reject dot segments
-
-`createHref` now refuses a pathname wildcard value containing a `.` or `..` segment, and
-`CreateHrefError` gained an `invalid-pathname-wildcard` variant. Generated pathnames get exactly one
-leading slash; internal and trailing slashes are preserved. Only relevant if you build hrefs from a
-`*wildcard` with user-supplied path pieces — which is exactly where a traversal would have come
-from.
-
-### The trap — your own JSR packages resolve a second UI runtime
-
-This is the one that costs an afternoon, and rc.4 is where it first bites a template-derived site,
-because `ui` had not crossed a minor since the packages were written.
-
-`^0.11.0` does not include 0.10. Any package of yours that declares `@remix-run/ui@^0.10.0` — or
-`^0.9.0`, or any earlier range — keeps resolving its own copy after you move the app to rc.4. Two
-copies of the UI runtime, module-level state existing twice, **no error anywhere**.
-
-**`deno outdated` will not find it.** The stale range is not in your `deno.json`; it is inside a
-dependency's manifest. It surfaces in the lockfile's `jsr` section:
+In a Deno workspace the ranges live in each member's `deno.json`. Edit the
+floors to the target set, then:
 
 ```bash
 deno install
+deno task check && deno task test && deno task build
+```
+
+If Deno refuses a fresh release with "newer than the specified minimum
+dependency date", that is `minimumDependencyAge` (24 h by default). Projects
+from deno-remix-tmpl already exclude `npm:@remix-run/*`, `jsr:@remix-kbn/*`
+and `jsr:@kuboon/*`; anywhere else follow the `deno-min-dep-age` skill. Never
+lower the global age or pass `--min-dep-age 0`.
+
+### Check the lockfile for a second copy
+
+A duplicate of a package with module-level state (`component` above all, also
+`fetch-router` — its `RequestContext` is nominally typed) splits the runtime
+with no error. `deno outdated` cannot see it when the stale range sits inside a
+JSR dependency's manifest. Read the lock:
+
+```bash
 python3 - <<'PY'
 import json
+from collections import Counter
 lock = json.load(open("deno.lock"))
-print([k for k in lock.get("npm", {}) if "@remix-run/ui" in k])
+names = [k.split("_")[0] for k in lock.get("npm", {}) if k.startswith("@remix-run/")]
+dups = {n: c for n, c in Counter(k.rsplit("@", 1)[0] for k in names).items() if c > 1}
+print("duplicates:", dups or "none")
 for name, entry in sorted(lock.get("jsr", {}).items()):
     for dep in entry.get("dependencies", []):
         if "@remix-run/" in dep:
@@ -156,1272 +112,212 @@ for name, entry in sorted(lock.get("jsr", {}).items()):
 PY
 ```
 
-Two entries in the first line is the bug:
+The `jsr` lines say which of your own packages asks for which range. 1.x
+ranges (`^1.0.0`) admit every later 1.x, so a JSR package normally needs no
+release for a Remix minor; `@remix-run/ui@^0.x` ranges are the exception.
 
-```
-['@remix-run/ui@0.10.0', '@remix-run/ui@0.11.0']
-@kuboon/md@0.5.0            -> npm:@remix-run/ui@0.10
-@remix-kbn/helper-agent@0.1.1 -> npm:@remix-run/ui@0.11
-```
+## 4. If you publish packages (@remix-kbn/*)
 
-Two more things about the lockfile, both of which will waste your time:
+- **Raise a floor only when the code needs the newer version**, and release
+  only the packages whose code or floor moved. A `^1.x` range that already
+  admits the new set needs nothing; bumping it just to match forces consumers
+  through a release with no change.
+- A package whose range excludes the new set (any `@remix-run/ui@^0.x`) must
+  move and publish **before** the apps that consume it are bumped.
+- In kuboon/remix-kbn a merge to `main` publishes to JSR by itself
+  (`release-jsr.yaml`): stop at the PR.
 
-- **`deno install` does not prune the stale entry.** After every consumer has moved, the old
-  `@remix-run/ui@0.10.0` block can still sit in the lock. Do not hand-edit it — find the package
-  that still requires it (the `jsr` section above says which), or it is genuinely orphaned and will
-  go on the next full resolve.
-- **Deleting `deno.lock` and reinstalling pulls unrelated churn.** A fresh resolve takes the newest
-  version inside every range, so an unrelated Markdown or build dependency moves in the same diff.
-  Prefer `deno outdated --update --compatible '@remix-run/*' --recursive`, which moves only the
-  floors you mean.
+## 5. Custom data-table adapters
 
-#### Does the duplicate actually matter? Ask the module graph
+A driver for `@remix-run/data-table` (Turso, D1, anything not first-party)
+implements a contract that minors extend. Missing a new optional hook still
+compiles and passes the adapter's own tests, and the rows simply come back in a
+different shape than on the first-party adapters.
 
-Before you block the upgrade on it, find out which graph the second copy is in. `deno info --json`
-answers per entry point:
+When `data-table` moves:
 
-```bash
-for entry in client/entry.ts server/router.tsx; do
-  deno info --json "$entry" | python3 -c '
-import json, re, sys
-mods = [m.get("specifier", "") for m in json.load(sys.stdin).get("modules", [])]
-print(sorted({re.search(r"ui@([0-9.]+)", m).group(1) for m in mods if "remix-run/ui@" in m}))'
-done
-```
+1. Read `DatabaseDriver` in the new `src/lib/driver.ts` for new members.
+2. Diff the first-party driver that speaks your dialect
+   (`data-table-sqlite` for any SQLite-family driver) between the old and new
+   version, and port what changed — value binding, `decodeValue`, helpers.
+3. If you vendored its SQL compiler, replace it with the new upstream one
+   rather than patching your copy. Copies drift: the copy in remix-kbn still
+   interpolated `order by` directions and carried an upsert binding bug that
+   upstream had fixed, and its own tests had the buggy output as the expected
+   value.
+4. Add a round-trip test against a real client (in-memory libSQL, a local D1)
+   for every column type the hook touches. Compiler snapshot tests cannot catch
+   a missing `decodeValue`.
 
-For a static site this often comes back as `['0.11.0']` for the client and `['0.10.0', '0.11.0']`
-for the server. That means the second runtime is **build-time only** — it never ships to a browser,
-and the pages it produced are fine as long as the vnode shape did not change between the two
-versions (it did not, between 0.10 and 0.11). You can ship, and fix the range on its own schedule.
-If the duplicate is in the *client* graph, stop: two runtimes in one document is not a cosmetic
-problem.
+## Release notes
 
-#### Fixing it
+### 3.2 → 3.3.0
 
-Bumping each of your packages to `^0.11.0` and releasing them works, and you will do it again on
-every `ui` minor. The durable fix is for the library to stop importing the UI runtime at all and
-take the element factory as an argument:
+Pinned set: `component@1.3.0`, `data-table@1.1.0` (+ `-sqlite` / `-mysql`
+1.1.0), `fetch-router@1.0.1`, `render-middleware@1.1.1`, `spa@1.0.3`,
+`test@1.2.0`, `headers@1.1.1`, `node-fetch-server@1.0.1`, the middleware set at
+1.0.x patches. Outside the set: **`ui@0.14.0`**, which requires
+`component ^1.3.0`.
 
-```diff
-- import { createElement } from "@remix-run/ui"
--
-- export function hastToElement(tree: HastNodes): RemixNode {
-+ export type CreateElement<Element> = (
-+   type: string,
-+   props: Record<string, unknown>,
-+   ...children: unknown[]
-+ ) => Element
-+
-+ export function hastToElement<Element>(
-+   tree: HastNodes,
-+   createElement: CreateElement<Element>,
-+ ): ElementTree<Element> {
-```
-
-Remix's real `createElement` is assignable to that type as-is, and the result is assignable to
-`RemixNode`, so the call site grows by one argument and nothing else. The library then never
-appears in a version table again — and its tests no longer need a UI runtime, since a three-line
-fake factory drives them.
-
-The same reasoning does **not** apply to a stateless helper. `hast-util-to-dom` duplicated is
-harmless: there is no module-level state to split. Inject what must be a singleton — a UI runtime, a
-`document` — and leave plain converters alone.
-
-### Landing the hop
-
-Only the ranges that `^` excludes need editing — for most template-derived sites that is
-`@remix-run/ui` alone:
-
-```bash
-# edit "@remix-run/ui" to ^0.11.0 wherever it appears, then
-deno outdated --update --compatible '@remix-run/*' --recursive
-deno install
-deno task check && deno lint && deno fmt --check && deno task test
-```
-
-Then check the lock for a second `@remix-run/ui`, as above, before you build.
-
-## rc.2 → rc.3
-
-Thirty-three of the 48 packages the meta-package pins move. Read the whole section even if the
-project only imports two of them: **rc.3 is a coordinated hardening release**, and most of what it
-changes is runtime behaviour that neither the compiler nor a unit test will report. Ten of the 33
-have no source change at all (`assets` `async-context-middleware` `auth-middleware` `cli`
-`fetch-router` `logger-middleware` `method-override-middleware` `render-middleware` `spa`
-`static-middleware`) — they were re-released to pick up a dependency. Nothing was removed from any
-package's exports.
-
-Six packages take a minor bump, and those are where the behaviour sits:
-
-| Package | rc.2 | rc.3 | |
-| --- | --- | --- | --- |
-| **`@remix-run/ui`** | 0.9.0 | **0.10.0** | **`innerHTML` / `srcDoc` no longer take a string**; `javascript:` URLs and `on*` props are stripped at render |
-| **`@remix-run/session-middleware`** | 0.4.1 | **0.5.0** | **the session cookie's wire format changes** when the cookie has a lifetime — existing sessions are dropped |
-| **`@remix-run/cors-middleware`** | 0.1.9 | **0.2.0** | credentialed requests stop working unless `origin` is set explicitly |
-| **`@remix-run/tar-parser`** | 0.7.1 | **0.8.0** | new default size/count limits and a path policy that rejects `..` and absolute paths |
-| **`@remix-run/data-table`** | 0.5.1 | **0.6.0** | `update()` / `delete()` reject an unconditional `where`; `compileOrderByDirection` added for adapters |
-| **`@remix-run/cookie`** | 0.6.0 | **0.7.0** | `Cookie#secure` is `boolean \| undefined` now, not `boolean` |
-
-The patch bumps that still change behaviour: `csrf-middleware` 0.1.10, `cop-middleware` 0.1.10,
-`form-data-parser` 0.17.6, `form-data-middleware` 0.3.7, `multipart-parser` 0.16.5, `fetch-proxy`
-0.8.6, `response` 0.3.9, `file-storage-s3` 0.1.5, `headers` 0.21.2, `route-pattern` 0.24.1,
-`data-schema` 0.3.1, `auth` 0.3.2, `data-table-{mysql,postgres,sqlite}`, `compression-middleware`
-0.1.15, `test` 0.6.1.
-
-### Breaking change — `innerHTML` and `srcDoc` take an `UnsafeHTML`, not a string
-
-The one break the compiler catches:
+For a deno-remix-tmpl app the dependency change is
+([deno-remix-tmpl#36](https://github.com/kuboon/deno-remix-tmpl/pull/36)):
 
 ```diff
-- innerHTML?: string
-+ innerHTML?: UnsafeHTML
-
-- srcDoc?: Trackable<string | undefined>
-+ srcDoc?: Trackable<UnsafeHTML | undefined>
+-"@remix-kbn/data-table-sqlite-turso": "jsr:@remix-kbn/data-table-sqlite-turso@^0.6.0",
+-"@remix-run/component": "npm:@remix-run/component@^1.2.0",
+-"@remix-run/cop-middleware": "npm:@remix-run/cop-middleware@^1.0.0",
+-"@remix-run/csp-middleware": "npm:@remix-run/csp-middleware@^1.0.0",
+-"@remix-run/data-table": "npm:@remix-run/data-table@^1.0.0",
+-"@remix-run/fetch-router": "npm:@remix-run/fetch-router@^1.0.0",
+-"@remix-run/render-middleware": "npm:@remix-run/render-middleware@^1.1.0",
+-"@remix-run/spa": "npm:@remix-run/spa@^1.0.2",
+-"@remix-run/ui": "npm:@remix-run/ui@^0.13.1",
++"@remix-kbn/data-table-sqlite-turso": "jsr:@remix-kbn/data-table-sqlite-turso@^0.7.0",
++"@remix-run/component": "npm:@remix-run/component@^1.3.0",
++"@remix-run/cop-middleware": "npm:@remix-run/cop-middleware@^1.0.1",
++"@remix-run/csp-middleware": "npm:@remix-run/csp-middleware@^1.0.1",
++"@remix-run/data-table": "npm:@remix-run/data-table@^1.1.0",
++"@remix-run/fetch-router": "npm:@remix-run/fetch-router@^1.0.1",
++"@remix-run/render-middleware": "npm:@remix-run/render-middleware@^1.1.1",
++"@remix-run/spa": "npm:@remix-run/spa@^1.0.3",
++"@remix-run/ui": "npm:@remix-run/ui@^0.14.0",
 ```
 
-`srcdoc` (lowercase) moves with `srcDoc`. Wrap the value at the call site:
+plus `fetch-router ^1.0.1` in `packages/remix-dpop-session-middleware`. The
+template itself needed no code change.
+
+#### `data-table@1.1.0` — values change shape (silent)
+
+- **The query builder converts values by column type.** `json()` values are
+  written with `JSON.stringify()` by `data-table` itself — strings included —
+  and the driver's new optional `decodeValue(value, column)` hook turns stored
+  values back into `json` objects, `boolean`s and `Date`s for table queries and
+  `returning` rows. `db.exec()` results are not decoded.
+- Code that stored **pre-serialized JSON** through the query builder now
+  double-encodes it. Pass the value:
 
-```diff
-+ import { unsafeHTML } from '@remix-run/ui'
-
-- <div innerHTML={rendered} />
-+ <div innerHTML={unsafeHTML(rendered)} />
-```
-
-`unsafeHTML(value: string): UnsafeHTML` and `readUnsafeHTML(value: unknown): string | undefined` are
-the whole API. The type is opaque — a frozen wrapper class, not a branded string — so the wrap has
-to happen where you decide the HTML is safe, which is the point of the change.
-
-It is not only a type. Both the server renderer and the browser runtime pass host props through
-`normalizeUnsafeHTMLProps`, which **throws** on a raw string:
-
-```
-Framework invariant: Invalid innerHTML prop
-```
-
-So a value arriving from untyped JavaScript, a spread, or a `props` object the compiler never saw
-fails at render rather than sneaking through. `outerHTML` throws the same way — it is not a
-supported prop at all.
-
-This only touches the Remix JSX prop. A class of your own with an `innerHTML` accessor, or a real
-DOM node you are driving by hand, is unaffected — and so is a `hast`/`linkedom` container, which is
-what most `innerHTML` grep hits in a Markdown pipeline turn out to be.
-
-### `ui@0.10.0` also filters props at render — silently
-
-Three new runtime rules, applied by both the server renderer and the browser runtime. Nothing
-throws; the offending value simply does not reach the DOM.
-
-- **`javascript:` URLs are replaced.** In `href`, `src`, `action`, `formaction`, `xlink:href`, and
-  `<object data>`, a value whose scheme parses as `javascript:` becomes
-  `javascript:throw new Error('Remix has blocked a javascript: URL as a security precaution.')`.
-  The test tolerates leading control characters and interleaved `\r\n\t`, so the obfuscated spellings
-  are caught too. A `javascript:` bookmarklet rendered deliberately stops working.
-- **`on*` props are dropped from host elements.** Any prop whose lowercased name starts with `on` is
-  skipped. Use `mix={on("click", …)}`, which is the supported path and unaffected.
-- **`__proto__` and `outerHTML` are dropped** by the attribute path, as is any prop name containing
-  a NUL, tab, newline, form feed, carriage return, space, quote, `/`, `>`, or `=`. (`outerHTML`
-  throws earlier, in `normalizeUnsafeHTMLProps`, before it reaches here.)
-
-If a page suddenly renders without a handler or a link stops navigating after rc.3, this is where to
-look. `isAllowedHostPropName` and `sanitizeUrlAttribute` are exported, so you can assert on them
-directly.
-
-The rest of `ui@0.10.0` is additive — ten new exports, nothing removed:
-
-```diff
-+ CommittedClientEntryNode
-+ NamedFrameRegistry
-+ UnsafeHTML
-+ isAllowedHostPropName
-+ isCommittedClientEntryNode
-+ normalizeUnsafeHTMLProps
-+ readUnsafeHTML
-+ reloadCurrentDocument
-+ sanitizeUrlAttribute
-+ unsafeHTML
-```
-
-**The `data-rmx-*` names are unchanged from rc.2.** There is no repeat of the rc.1 attribute rename.
-
-### Breaking change — `session-middleware@0.5.0` changes the cookie's wire format
-
-The loudest operational change in the release, and it reports nothing at all.
-
-If the session cookie was constructed with `maxAge` or `expires`, the middleware now stores a JSON
-envelope instead of the bare storage value:
-
-```ts
-// what 0.5.0 writes when the cookie has a lifetime
-JSON.stringify({ value: setCookieValue, expires: Date.now() + maxAge * 1000 })
-```
-
-and on the way in, `readExpiringCookie` returns `null` for anything that is not that envelope with a
-future `expires`. **A cookie issued by 0.4.x is not that shape, so it reads as no session at all.**
-Deploy rc.3 and every signed-in user is signed out on their next request. There is no migration path
-in the package; plan for the logout, or roll the session cookie's name deliberately so nothing looks
-like a bug.
-
-The lifetime is now enforced server-side too. Previously the cookie's `Max-Age` was the only thing
-stopping an old session from being loaded — a client that kept sending the cookie past its expiry
-got its session back. Now the envelope's timestamp is checked before `sessionStorage.read`.
-
-Two defaults moved with it:
-
-```diff
-  await sessionCookie.serialize(setCookieValue, {
-    httpOnly: sessionCookie.httpOnly ?? true,
-+   secure: sessionCookie.secure ?? context.url.protocol === 'https:',
-  })
-```
-
-An explicit `secure` on the cookie still wins. This is what `cookie@0.7.0` exists for: `Cookie#secure`
-had to stop collapsing "not configured" into `false` for that `??` to mean anything, so its getter is
-now `boolean | undefined`. Code that reads `cookie.secure` and expects a `boolean` is a compile error
-under `strict` — the one loud symptom of an otherwise quiet package.
-
-### Breaking change — `cors-middleware@0.2.0` stops reflecting the origin by default
-
-```diff
-- if (allowCredentials && allowedOrigin === '*') {
-+ if (allowCredentials && allowedOrigin === '*' && options.origin !== undefined) {
-    allowOriginHeader = requestOrigin
-  }
-```
-
-With `credentials: true` and no `origin` option, rc.2 quietly reflected the request's `Origin`,
-which meant "any site may make credentialed requests to this API". rc.3 leaves the header as `*`,
-and **browsers reject a credentialed response with `Access-Control-Allow-Origin: *`** — so a working
-cross-origin setup starts failing in the browser while the server logs a clean 200.
-
-The fix is to say what you meant:
-
-```diff
-  cors({
-    credentials: true,
-+   origin: ['https://app.example.com'],   // or `true` to reflect deliberately
-  })
-```
-
-`origin: true` restores the reflecting behaviour, now as an explicit choice. Separately,
-`Access-Control-Request-Private-Network` is added to `Vary` whenever `allowPrivateNetwork` is set,
-not only when the request asked — a cache-correctness fix with no action required.
-
-### Breaking change — CSRF and COP check the *original* method
-
-```diff
-- if (isSafeMethod(context.method, safeMethods)) {
-+ if (isSafeMethod(context.request.method.toUpperCase(), safeMethods)) {
-```
-
-Same change in `cop-middleware`, including its bypass-pattern matching. `context.method` reflects the
-method *after* `method-override-middleware` has run, so a `POST` arriving as an override of a `GET`
-was being waved through as a safe method. rc.3 reads the real HTTP method off the request.
-
-If the app uses method override, requests that used to skip CSRF validation now require a token. The
-`safeMethods` option's meaning is unchanged; what it is compared against is what moved.
-
-### `tar-parser@0.8.0` adds limits and a path policy, both on by default
-
-New `ParseTarOptions` fields, all enforced unless you opt out with `Infinity`:
-
-| Option | Default |
-| --- | --- |
-| `maxEntrySize` | 2 MiB (2097152) |
-| `maxTotalSize` | 20 MiB (20971520) |
-| `maxEntries` | 5000 |
-
-Exceeding one throws `MaxEntrySizeExceededError`, `MaxTotalSizeExceededError`, or
-`MaxEntriesExceededError` — all new exports, all subclasses of `TarParseError`. An archive that
-parsed fine in rc.2 and is larger than 20 MiB now fails, so raise the limits explicitly if you are
-parsing real archives:
-
-```ts
-await parseTar(archive, { maxTotalSize: Infinity, maxEntrySize: 64 * 1024 * 1024 }, handler)
-```
-
-`TarParserOptions` is now `ParseTarOptions` rather than `ParseTarHeaderOptions`, so a `TarParser`
-constructed directly takes the limits too, and exposes them as readonly properties.
-
-The other half is `pathPolicy`, defaulting to `'relative'`: entry names and link targets that are
-empty, absolute, contain a Windows drive prefix, a backslash, or a NUL are rejected, entry names may
-not contain `..`, and link targets may not resolve above the archive root. `pathPolicy: 'preserve'`
-restores rc.2's behaviour. Note what the docs are careful to say: **neither policy guarantees
-containment on the destination filesystem** — if you write entries to disk, you still validate.
-
-### `data-table@0.6.0`: an unconditional `where` is rejected
-
-`update()` and `delete()` now throw `DataTableQueryError` when every predicate in the `where` clause
-is structurally unconditional — in practice `notIn(column, [])`, or an `and`/`or` tree of them:
-
-```
-update() does not allow a structurally unconditional where clause
-```
-
-This catches the "empty array of ids" bug where a filter meant to narrow a write instead matches
-every row. A deliberate write-everything still works: pass no `where` at all.
-
-Two API notes. The comparison operators (`eq` `ne` `gt` `gte` `lt` `lte`) **widen** their second
-parameter from `ColumnInput & (not a column reference)` to `ColumnReferenceLike`, so existing calls
-keep compiling. And `compileOrderByDirection` is new in `@remix-run/data-table/sql-helpers`:
-
-```ts
-export function compileOrderByDirection(direction: unknown): 'ASC' | 'DESC'
-```
-
-It throws `TypeError` on anything but `asc`/`desc`. The three first-party adapters switched to it
-from `clause.direction.toUpperCase()`, which interpolated an unvalidated string into SQL. **A custom
-adapter is the one place rc.3 will not fix for you** — if yours compiles `order by` itself, make the
-same change.
-
-### `form-data-parser@0.17.6` throws instead of falling back
-
-```diff
-  if (!isMultipartRequest(request)) {
--   try {
--     return await request.formData()
--   } catch (error) {
--     throw new FormDataParseError('Cannot parse form data', { cause: error })
--   }
-+   throw new FormDataParseError('Cannot parse form data')
-  }
-```
-
-`parseFormData` accepts `multipart/*` and `application/x-www-form-urlencoded`, and nothing else. A
-request with some other content type — or none — used to reach the platform's `request.formData()`
-and sometimes succeed; now it throws before the body is read.
-
-Content-type detection across `form-data-parser`, `form-data-middleware`, and `multipart-parser`
-also moved from `contentType.startsWith(…)` to parsing the header with
-`ContentType.from(…).mediaType`. A header like `Application/X-WWW-Form-URLencoded ; charset=utf-8`
-is now recognised where the prefix test missed it, and a type such as `multipart/form-data-evil` no
-longer matches `multipart/`. `form-data-middleware` still sets an empty `FormData` for an unmatched
-type rather than throwing.
-
-### The rest
-
-- **`fetch-proxy@0.8.6`** — `xForwardedHeaders: true` now `set`s the three `X-Forwarded-*` headers
-  instead of appending, and **deletes incoming `Forwarded` and `X-Forwarded-For`**. A client could
-  previously forge them. If something downstream reads `X-Forwarded-For` through this proxy, it will
-  now find nothing: a Fetch `Request` has no client address to put there.
-- **`response@0.3.9`** — `text/html` joins `text/event-stream` in getting an automatic
-  `Z_SYNC_FLUSH` / `BROTLI_OPERATION_FLUSH`, so a streamed HTML response reaches the browser
-  incrementally instead of sitting in the compressor. Media-type matching is case-insensitive now.
-  An explicit `flush` still wins.
-- **`file-storage-s3@0.1.5`** — an empty key, or a key with a `.` or `..` segment, throws
-  `TypeError` instead of being encoded and sent.
-- **`headers@0.21.2`** — `SameSite` parsing is anchored (`/^(strict|lax|none)$/i`), so a malformed
-  value no longer matches on a substring.
-- **`route-pattern@0.24.1`** — a backslash is now structural in hostname params (special schemes
-  treat `\` as `/`), and the matcher charges its work budget while scanning `:param` segments, so a
-  pathological pattern hits the budget instead of running long.
-- **`data-schema@0.3.1`** — issue `path` arrays are copied rather than aliasing the validator's
-  shared mutable path, so issues from a custom schema report the path they were created at. If you
-  built a schema with `createSchema`, its validator's context parameter is now typed
-  `ValidationContext` instead of an inline object type — compatible, and worth adopting.
-- **`auth@0.3.2`** — `finishExternalAuth`'s `returnTo` is passed through `sanitizeReturnTo`, so a
-  stored redirect target that is not a local path comes back `undefined` instead of being handed to
-  your redirect. Open-redirect fix; if you relied on an absolute `returnTo`, it no longer survives.
-- **`test@0.6.1`** — the worker imports the Playwright e2e runner lazily, so a server-only test run
-  no longer needs Playwright installed.
-
-### If you publish a library
-
-Same trap as every boundary, and rc.3 is a wide one: `^0.10.0` excludes 0.9, `^0.6.0` excludes 0.5,
-`^0.5.0` excludes 0.4, `^0.7.0` excludes 0.6. A package still on `@remix-run/ui@^0.9.0` gives an
-rc.3 application **a second copy of the UI runtime**, with module-level state duplicated and no
-error. Move every range with the set, and publish, before bumping the app that consumes it.
-
-## rc.1 → rc.2
-
-Twenty-four of the 48 packages the meta-package pins move, but almost all of it is patch churn
-tracking `fetch-router@0.22.0`. Four entries carry anything to do:
-
-| Package | rc.1 | rc.2 | |
-| --- | --- | --- | --- |
-| **`@remix-run/render-middleware`** | 0.2.0 | **0.3.0** | **asks an asset server for `getScriptEntry`, not `getHref` + `getPreloads`** |
-| **`@remix-run/assets`** | 0.6.0 | **0.7.0** | answers `getScriptEntry`; exported `generateFingerprint` is gone |
-| **`@remix-run/fetch-router`** | 0.21.0 | **0.22.0** | no API change; a method mismatch is now `405`, and `HEAD` falls back to `GET` |
-| `@remix-run/ui` | 0.8.0 | 0.9.0 | purely additive — see below |
-| `@remix-run/multiple-import-maps-polyfill` | — | 0.1.0 (new) | opt-in |
-| `@remix-run/cli` | 0.6.0 | 0.7.0 | |
-| `@remix-run/node-hmr` | 0.1.0 | 0.2.0 | no export change |
-| `auth` `data-table` `data-table-{mysql,postgres,sqlite}` `session-middleware` `spa` `static-middleware` and the `*-middleware` set | | | patch bumps |
-
-### Breaking change — `render({ assets })` wants a different asset server
-
-`render-middleware@0.3.0` narrowed what it asks of an asset server, from two calls to one:
-
-```diff
-- assets?: Pick<AssetServer, 'getHref' | 'getPreloads'>
-+ assets?: Pick<AssetServer, 'getScriptEntry'>
-```
-
-`getScriptEntry(id)` answers with `{ href, preloads, importMap }` in one call, and the middleware
-puts the `importMap` into the document — which is what `ui@0.9.0`'s new `data-rmx-import-map` and
-the new polyfill package are for.
-
-Passing `@remix-run/assets`' own server? Then bumping the set together *is* the fix — `assets@0.7.0`
-adds `getScriptEntry` and keeps `getHref` and `getPreloads`, so nothing else at the call site moves.
-
-Passing **your own** asset server — an adapter, a Deno-side implementation, anything structural —
-then it must grow `getScriptEntry` or `render({ assets })` stops type-checking:
-
-```ts
-async getScriptEntry(entry: string): Promise<{
-  href: string
-  preloads?: string[]
-  importMap?: { imports: Record<string, string> }
-}> {
-  let [href, preloads] = await Promise.all([this.getHref(entry), this.getPreloads(entry)])
-  return { href, preloads, importMap: { imports: {} } }
-}
-```
-
-An empty import map is the honest answer when every specifier was already rewritten to a served URL
-at compile time — there is nothing bare left for the browser to resolve.
-
-This one the compiler does catch, which makes it the opposite of rc.1's attribute rename: loud, and
-fixed in one place.
-
-### `fetch-router@0.22.0`: a method mismatch is a 405 now
-
-No export changed. Two routing behaviors did:
-
-- A path that matches a route whose **method** does not now answers `405 Method Not Allowed` with an
-  `Allow` header listing the methods that do match. Previously it fell through to the `404` handler.
-  Anything asserting a 404 for `POST /some-get-route` — a test, a custom not-found page, a crawler
-  treating 404 as "skip" — sees a 405 instead.
-- A `HEAD` request with no `HEAD` or `ANY` route falls back to the most specific `GET` route of equal
-  specificity, and the response body is dropped.
-
-A crawl that only issues `GET`, which is what a static-site build does, sees neither.
-
-### `ui@0.9.0` is additive
-
-Nothing removed, nothing renamed — the export diff is eight additions:
-
-```diff
-+ ImportMap
-+ composeMixedProps
-+ getDocumentImportMapManager
-+ isDocumentReload
-+ isMixinElementFunction
-+ reloadDocument
-+ resetDocumentImportMapManager
-+ resolveMixDescriptors
-```
-
-**The `data-rmx-*` names from rc.1 are unchanged**, with one addition, `data-rmx-import-map`. The
-mixin authoring API (`createMixin`, `MixinType`, `MixinHandle`) is unchanged too: `on-mixin.ts` and
-`ref-mixin.ts` are byte-identical between 0.8.0 and 0.9.0, so a mixin written against rc.1 keeps
-compiling. So does a `createElement` / `RemixNode` consumer — `create-element.ts` is byte-identical
-and `jsx.ts`'s export signatures are unchanged.
-
-If you are on rc.1 already, this half of the hop is a version range and a relock.
-
-### The `^0.9.0` trap for library authors
-
-A package that depends on `@remix-run/ui` has to move its range with the set, even though the bump is
-additive. `^0.9.0` does not include 0.8, so a library left at `^0.8.0` resolves a **second copy of
-the UI runtime** in an application that moved to rc.2 — and module-level state (a store, a registry,
-the runtime's own document state) then exists twice, with no error. The same applies to
-`fetch-router`'s `^0.22.0`.
-
-## beta.10 → rc.1
-
-Ten of the 47 packages the meta-package pins move; the other 37 are
-byte-identical to beta.10.
-
-| Package | beta.10 | rc.1 | |
-| --- | --- | --- | --- |
-| **`@remix-run/ui`** | 0.7.0 | **0.8.0** | **renames every `rmx-*` DOM attribute — silent** |
-| **`@remix-run/auth`** | 0.2.7 | **0.3.0** | Atmosphere provider and DPoP types removed/renamed |
-| **`@remix-run/assets`** | 0.5.0 | **0.6.0** | `getInjectedPackageRouteConfigs` renamed |
-| `@remix-run/render-middleware` | 0.1.5 | 0.2.0 | additive — adds `render`, `RenderFunction`, `RenderOptions` |
-| `@remix-run/data-table` | 0.4.0 | 0.5.0 | additive — adds the `rollback` migration command |
-| `@remix-run/data-table-sqlite` | 0.6.0 | 0.6.1 | dependency bump |
-| `@remix-run/data-table-mysql` | 0.5.0 | 0.5.1 | dependency bump |
-| `@remix-run/data-table-postgres` | 0.5.0 | 0.5.1 | dependency bump |
-| `@remix-run/cli` | 0.5.0 | 0.6.0 | template only — nothing to migrate |
-| `@remix-run/spa` | — | 0.1.0 (new) | opt-in, pairs with `spaResponse()` in `ui` |
-
-Only the first three carry work. The `ui` one is the dangerous one and is why
-this section exists.
-
-### Breaking change — every `rmx-*` attribute is now `data-rmx-*`
-
-`@remix-run/ui@0.8.0` moved its DOM attributes into the `data-` namespace.
-There is **no alias, no fallback, and no deprecation warning**: the runtime
-reads only the new names and ignores the old ones like any other unknown
-attribute.
-
-| Before (≤ 0.7.0) | After (0.8.0) | What breaks if you miss it |
-| --- | --- | --- |
-| `rmx-document` | `data-rmx-document` | the opt-out stops working — the link or form is intercepted and navigates through a frame |
-| `rmx-target` | `data-rmx-target` | navigation falls back to the top frame |
-| `rmx-src` | `data-rmx-src` | the frame loads the link's `href` instead of the named source |
-| `rmx-history` | `data-rmx-history` | `push`/`replace` override is ignored |
-| `rmx-reset-scroll` | `data-rmx-reset-scroll` | scroll is reset even where you suppressed it |
-| `rmx-preserve-dom` | `data-rmx-preserve-dom` | the reconciler clobbers client-owned subtrees (custom elements, third-party widgets) on reload |
-| `data-key` | `data-rmx-key` | keyed reconciliation silently degrades to positional matching |
-
-Unchanged, do **not** rewrite them: the `rmx-reset` CSS layer name and the
-`<script id="rmx-data">` hydration payload id. `data-rmx-key`,
-`data-rmx-style` and `data-rmx-module-preload` are the only new spellings you
-write by hand or match in selectors; the last two are emitted by the server
-renderer.
-
-**Nothing tells you.** TypeScript does not type-check JSX attribute names that
-contain a hyphen, so the old spelling compiles exactly as cleanly as the new
-one — verified against `ui@0.8.0` with `strict: true`:
-
-```tsx
-const old = <a href="/x" rmx-document="">old</a>        // no error
-const neu = <a href="/x" data-rmx-document="">new</a>   // no error
-const junk = <a href="/x" totally-made-up="">junk</a>   // no error
-const typo = <a hrefTypo={1} />                         // TS2322 — camelCase is checked
-```
-
-The build stays green, the page renders, and the only symptom is behavioral:
-the URL changes but the view does not, a document download is swallowed by a
-frame, or a custom element loses its state on every reload. Exercise link, form
-and frame navigation in a real browser after this bump — no unit test will
-catch it.
-
-Find every occurrence with a word-boundary grep that will not also match the
-already-migrated names:
-
-```bash
-grep -rnE '(^|[^-a-z])rmx-(document|target|src|history|reset-scroll|preserve-dom)\b' \
-  --include='*.tsx' --include='*.ts' --include='*.html' .
-grep -rn 'data-key' --include='*.tsx' --include='*.ts' --include='*.html' .
-```
-
-The rewrite itself is mechanical:
-
-```diff
-- <a href="/download" rmx-document>…</a>
-- <a href="/panel" rmx-target="side" rmx-history="replace">…</a>
-- <div rmx-preserve-dom><my-widget /></div>
-+ <a href="/download" data-rmx-document>…</a>
-+ <a href="/panel" data-rmx-target="side" data-rmx-history="replace">…</a>
-+ <div data-rmx-preserve-dom><my-widget /></div>
-```
-
-Two upsides once you are on the new names. `data-rmx-document` is now *typed*
-on anchor and form props (0.7.0 typed the other five but not that one), so a
-misspelling of the `data-rmx-*` prefix on an element whose props declare it is
-caught. And `link(href, { target, src, history, resetScroll })` emits the
-`data-` names itself — prefer it over hand-written attributes and the rename
-becomes a non-event.
-
-### Breaking change — `addEventListeners` is gone from `ui`
-
-`@remix-run/ui@0.8.0` deletes the `addEventListeners` helper and its module.
-This one the compiler *does* catch (`has no exported member
-'addEventListeners'`). Use the platform's own signal-scoped listeners:
-
-```diff
-- addEventListeners(target, handle.signal, {
--   pointerdown(event) { … },
--   pointerup(event) { … },
-- })
-+ target.addEventListener('pointerdown', (event) => { … }, { signal: handle.signal })
-+ target.addEventListener('pointerup', (event) => { … }, { signal: handle.signal })
-```
-
-`{ signal }` covers teardown, which is what most call sites used it for. The
-one thing that does not survive is the *re-entry* abort: a listener declared
-with a second parameter received a per-dispatch `AbortSignal` that was aborted
-when the same event fired again. If a call site used it — an async drag or
-animation handler that must cancel its predecessor — hold your own
-`AbortController` and abort it at the top of the handler. Inside components the
-`on()` mixin is unchanged and remains the idiomatic choice.
-
-### `auth@0.3.0` and `assets@0.6.0`
-
-Only relevant if the app imports them directly; both are compiler-caught
-renames.
-
-`@remix-run/auth` drops the whole Atmosphere provider
-(`createAtmosphereAuthProvider`, `AtmosphereAuthProvider`,
-`AtmosphereAuthProfile`, `AtmosphereOAuthTokens`,
-`AtmosphereAuthorizationServerMetadata`, `AtmosphereClientAuthentication`,
-`AtmosphereTokenAuthorizationServer`, `AtmosphereAuthProviderOptions`,
-`AtmosphereAuthProviderMapProfileInput`) and reshapes the token model:
-`OAuthStandardTokens` / `OAuthDpopTokens` / `OAuthDpopBinding` are gone, a new
-`OAuthTransaction` type appears, `mergeRefreshedStandardTokens` is now
-`mergeRefreshedTokens`, and the value export `oauthProviderRuntime` becomes the
-type `OAuthProviderRuntime`.
-
-`@remix-run/assets` renames `getInjectedPackageRouteConfigs` to
-`getInjectedPackageRoots` and adds an inspector surface
-(`createAssetInspector`, `getInjectedPackageMountConfigs`, `AssetDetails`,
-`AssetKind`, `AssetStatus`, `AssetAccessRule`, `AssetAccessDetails`).
-
-The version table and these symbol lists were diffed from the published
-packages. The additive-only packages were checked at the level of exported
-signatures, not behavior — read their changelogs if the app leans on them.
-
-### New: `@remix-run/spa`
-
-`@remix-run/spa@0.1.0` is new and opt-in, paired with `spaResponse()` and
-`getSpaResponseData()` in `ui@0.8.0`. Nothing to migrate — skip unless you want
-a client-rendered shell.
-
-## beta.6 → beta.10
-
-Only **three** packages move. Everything else the meta-package pins is
-byte-identical to beta.6, so this is a small diff.
-
-| Package | beta.6 | beta.10 | |
-| --- | --- | --- | --- |
-| `@remix-run/static-middleware` | 0.4.13 | **0.4.14** | fixes the type trap below |
-| `@remix-run/ui` | 0.5.0 | **0.7.0** | behavior change, no API break |
-| `@remix-run/cli` | 0.4.0 | 0.5.0 | template only — nothing to do |
-
-### The `staticFiles()` cast is no longer needed
-
-`static-middleware@0.4.14` widens its `@remix-run/fetch-router` dependency to
-`^0.21.0`, which is exactly the fix for the duplicate-copy type error the
-beta.6 section documents below. Its changelog says so outright: "Fixed
-`staticFiles()` middleware types being incompatible with other router middleware
-… without package-manager overrides."
-
-Verified both directions with `deno check` on the same source: `0.4.13` still
-raises `TS2322: Type 'Middleware' is not assignable to type 'AnyMiddleware'`,
-`0.4.14` compiles clean. So delete the workaround:
-
-```diff
-- // static-middleware@0.4.13 pins fetch-router ^0.20.1, so Deno/npm resolve a
-- // second copy and the Middleware types no longer overlap. Its fetch-router
-- // import is type-only, so this is sound. Drop once upstream widens the range.
-- const serveStatic = staticFiles(dir) as unknown as Middleware
--
-- const router = createRouter({ middleware: [serveStatic] })
-+ const router = createRouter({ middleware: [staticFiles(dir)] })
-```
-
-Grep for `as unknown as Middleware` and for any npm `overrides` / pnpm
-`resolutions` entry pinning `@remix-run/fetch-router` — both exist only to work
-around this and should go with it.
-
-### `ui@0.7.0`: `run()` has a default frame resolver
-
-**This is the one behavioral change to think about.** `resolveFrame` is now
-optional, and *every* `run()` call — including ones that never passed a resolver
-— enables frame reloads and same-origin link and form navigation through the
-Navigation API.
-
-If the app supplied a resolver only to fetch frame HTML, delete it:
-
-```diff
-  let app = run({
-    loadModule,
--   resolveFrame(src, options) {
--     return fetch(src, {
--       headers: { Accept: 'text/html' },
--       signal: options?.signal,
--     })
--   },
-  })
-```
-
-The default resolver submits the requested method, encoding, and form data, and
-rejects non-OK responses. **Keep** a custom `resolveFrame` when the app needs
-custom request headers (e.g. an `rmx-frame` marker the server keys on), custom
-body encoding, response handling, or error UI — the default has none of that.
-
-The trap is the opposite direction: an app that deliberately had **no** resolver
-was getting plain document navigation, and now gets intercepted navigation it
-never asked for. If a link or form must stay a document navigation, mark it:
-
-```html
-<a href="/download" rmx-document>…</a>
-```
-
-On rc.1 that attribute is spelled `data-rmx-document`; see
-[beta.10 → rc.1](#beta10--rc1). If you are landing on rc.1 anyway, write the
-`data-` name now and skip the intermediate spelling.
-
-Nothing here fails to compile, so exercise link and form navigation in a real
-browser after the bump.
-
-### The rest
-
-- `ui@0.6.0` — `resolveClientEntry()` may return module preload hrefs so client
-  entries can preload their browser module graphs. Purely additive.
-- `cli@0.5.0` — the `remix new` template now emits client-entry preloads. It
-  changes scaffolding for *new* projects only; there is nothing to migrate in an
-  existing one.
-
-Everything in the beta.6 section below still applies as written — no API
-introduced there was changed again by beta.10.
-
-## beta.5 → beta.6
-
-Skip this section if the project is already on beta.6.
-
-### Version table
-
-Bump these; the ones in **bold** carry breaking changes documented below.
-
-| Package | beta.5 | beta.6 |
-| --- | --- | --- |
-| **`@remix-run/ui`** | 0.4.0 | **0.5.0** |
-| **`@remix-run/fetch-router`** | 0.20.1 | **0.21.0** |
-| **`@remix-run/route-pattern`** | 0.23.0 | **0.24.0** |
-| **`@remix-run/data-table`** | 0.3.0 | **0.4.0** |
-| **`@remix-run/data-table-sqlite`** | 0.5.1 | **0.6.0** |
-| **`@remix-run/data-table-mysql`** | 0.4.0 | **0.5.0** |
-| **`@remix-run/data-table-postgres`** | 0.4.0 | **0.5.0** |
-| **`@remix-run/session-middleware`** | 0.3.4 | **0.4.0** |
-| **`@remix-run/cookie`** | 0.5.4 | **0.6.0** |
-| **`@remix-run/assets`** | 0.4.4 | **0.5.0** |
-| **`@remix-run/cli`** | 0.3.4 | **0.4.0** |
-| **`@remix-run/test`** | 0.5.0 | **0.6.0** |
-| `@remix-run/node-fetch-server` | 0.14.0 | 0.14.1 |
-| `@remix-run/fetch-proxy` | 0.8.4 | 0.8.5 |
-| `@remix-run/multipart-parser` | 0.16.3 | 0.16.4 |
-| `@remix-run/form-data-parser` | 0.17.4 | 0.17.5 |
-| `@remix-run/response` | 0.3.7 | 0.3.8 |
-| `@remix-run/auth` | 0.2.6 | 0.2.7 |
-| `@remix-run/auth-middleware` | 0.2.4 | 0.2.5 |
-| `@remix-run/cors-middleware` | 0.1.7 | 0.1.8 |
-| `@remix-run/cop-middleware` | 0.1.7 | 0.1.8 |
-| `@remix-run/csrf-middleware` | 0.1.7 | 0.1.8 |
-| `@remix-run/logger-middleware` | 0.3.4 | 0.3.5 |
-| `@remix-run/render-middleware` | 0.1.4 | 0.1.5 |
-| `@remix-run/form-data-middleware` | 0.3.4 | 0.3.5 |
-| `@remix-run/async-context-middleware` | 0.3.4 | 0.3.5 |
-| `@remix-run/compression-middleware` | 0.1.12 | 0.1.13 |
-| `@remix-run/method-override-middleware` | 0.1.12 | 0.1.13 |
-| `@remix-run/ui-hmr` | — | 0.1.0 (new) |
-| `@remix-run/node-hmr` | — | 0.1.0 (new) |
-
-Unchanged across the boundary — leave them alone: `assert` 0.3.0, `session`
-0.4.2, `static-middleware` 0.4.13, `html-template` 0.3.1, `headers` 0.21.1,
-`fs` 0.4.6, `mime` 0.4.2, `lazy-file` 5.0.6, `data-schema` 0.3.0,
-`file-storage` 0.13.7, `file-storage-s3` 0.1.4, `session-storage-redis` 0.1.1,
-`session-storage-memcache` 0.1.2, `tar-parser` 0.7.1, `terminal` 0.1.1,
-`node-tsx` 0.1.1.
-
-Most of the patch bumps are pure "bumped `@remix-run/*` dependencies" churn
-tracking `fetch-router@0.21.0`. Three carry real fixes:
-`node-fetch-server@0.14.1` now hands request handlers **native `Request`
-instances** instead of lazy look-alikes (so `new Request(request, init)` works);
-`fetch-proxy@0.8.5` stops forwarding `Accept-Encoding` to targets and strips
-`Content-Encoding`/`Transfer-Encoding` from proxied responses;
-`response@0.3.8` adds `Vary: Accept-Encoding` to identity responses from
-`compressResponse()`.
-
-### Breaking change 1 — `Route.href()` and `createHref()` take an options object
-
-`fetch-router@0.21.0` and `route-pattern@0.24.0`. The trailing positional
-`searchParams` argument became an options object. A call left in the old shape
-still type-checks in loose spots and silently drops the query string.
-
-```diff
-- route.href({ id }, { page: '2' })
-+ route.href({ id }, { searchParams: { page: '2' } })
-
-- createHref('/posts/:id', { id }, new URLSearchParams({ page: '2' }))
-+ createHref('/posts/:id', { id }, { searchParams: new URLSearchParams({ page: '2' }) })
-```
-
-`searchParams` accepts both a typed plain object and a `URLSearchParams`
-(repeated entries keep their order). Both functions also gained a `baseURL`
-option: with it, same-origin targets come back as path-relative references while
-cross-origin targets stay absolute. Matchers accept relative URL strings when
-`match()`/`matchAll()` are given an absolute `baseURL`.
-
-Zero-argument `route.href()` and param-only `route.href({ id })` are unaffected —
-if that is all the project uses, there is nothing to change here.
-
-### Breaking change 2 — route params are delimiter-bounded
-
-`route-pattern@0.24.0` replaced the backtracking matcher with a bounded state
-compiler. Pathname params possessively capture through hyphens but stop at a raw
-`/` or `.`, which keeps UUIDs intact, and `createHref()` percent-encodes dots in
-param values so they round-trip.
-
-The cost is that **two params in one segment no longer split**:
-
-```diff
-- route('/reports/:year-:month')   // ParseError on beta.6
-+ route('/reports/:date')          // one inseparable param, split it yourself
-+ route('/reports/:year/:month')   // or give each capture its own segment
-```
-
-Also now a `ParseError` rather than a silent match: adjacent wildcards, empty
-optional groups, a param followed by non-delimiter text, and ambiguous adjacent
-optional capture schemas. Repeated capture names stay legal — the last
-participating capture wins in `params`, and `paramsMeta` keeps every capture in
-source order.
-
-Matchers take `MatcherOptions.limits` for pattern size, matcher size, and match
-work; exceeding one throws `MatcherResourceError` with structured details.
-Static pattern text is decoded during matching, while raw and percent-encoded
-`/` and `.` keep distinct structural meaning.
-
-Audit every route pattern in the project for a hyphen or dot between two params.
-Plain static dots (`/.well-known/jwks.json`) are fine.
-
-### Breaking change 3 — browser `resolveFrame(src, options)`
-
-`ui@0.5.0`. The browser frame resolver passed to `run()` took positional
-`signal` and `target`; it now takes a single options object. **This one fails
-silently**: the old signature keeps compiling, `signal` receives an object
-instead of an `AbortSignal`, and `target` is always `undefined`, so named-frame
-routing and abort-on-navigate quietly stop working.
-
-```diff
-  const app = run({
-    loadModule,
--   async resolveFrame(src: string, signal?: AbortSignal, target?: string) {
-+   async resolveFrame(src, options) {
-+     const { signal, target } = options ?? {}
-      const headers = new Headers({ accept: 'text/html', 'rmx-frame': '1' })
-      if (target) headers.set('rmx-target', target)
-      const response = await fetch(src, { headers, signal })
-      return response.body ?? (await response.text())
-    },
-  })
-```
-
-`ResolveFrameOptions` carries `target`, `signal`, and — for the new form
-enhancement below — `formData`, `method`, and `encType`.
-
-The **server-side** `resolveFrame` passed to `renderToStream()` is a different
-callback and did **not** change; it is still
-`(src, target?, context?) => string | ReadableStream`. Do not "fix" it to match.
-
-#### What else changed in `ui@0.5.0`
-
-Additive, but worth knowing while you are in this code:
-
-- Resolvers may now return a `Response`. Its body streams into the frame, and
-  when a top-frame navigation follows a redirect the final response URL replaces
-  the current navigation entry and becomes the frame's canonical `src` without a
-  second load.
-- Same-origin **forms progressively enhance into frame navigations** whenever
-  `run({ resolveFrame })` is configured. Native constraint validation runs
-  first; submissions target the top frame unless `rmx-target` names one;
-  `rmx-document` opts back into a document navigation (both gain a `data-`
-  prefix in `ui@0.8.0` — see [beta.10 → rc.1](#beta10--rc1)). For non-GET submissions
-  the resolver receives the browser's native `FormData` plus `method` and
-  `encType`, and stays responsible for encoding the request and any `_method`
-  convention. If the app already hand-wires form submission, check for
-  double-submits.
-- `rmx-history="push|replace"` on anchors and forms overrides the history
-  behavior of enhanced navigations; `link(href, { history })` emits it.
-- `rmx-preserve-dom` tells the reconciler to keep a matching element's current
-  attributes and children across reloads — the escape hatch for custom elements
-  and other client-owned subtrees.
-- Both attributes are `data-rmx-history` and `data-rmx-preserve-dom` from
-  `ui@0.8.0` (rc.1) on.
-- `run()` returns `frames` on the app object, mirroring `handle.frames`.
-- New `@remix-run/ui/dev/refresh` entry point for tooling that reconciles
-  mounted roots after component modules change.
-- Built-in styled components now use `light-dark(...)` for their internal
-  surfaces, text, borders and focus rings, so they finally render correctly
-  under a dark color scheme. Check custom overrides that assumed light values.
-- A pile of frame/hydration reconciliation fixes: `css()` on subtype hosts like
-  `<select>`, `<` escaping in server-rendered `css()` output, frames hanging
-  when a nested `Frame` marker moves out of a region, stale frame bounds when
-  navigating between differing `Frame` layouts, and top-frame reloads using the
-  previous URL after a named-frame navigation.
-
-### Breaking change 4 — data-table has no adapters any more
-
-`data-table@0.4.0` plus the dialect packages. The adapter indirection is gone:
-`Database` is now the canonical public class, dialect packages **extend** it and
-hand a private `DatabaseDriver` to `super()`, and applications construct a
-concrete database directly.
-
-```diff
-- import { createDatabase } from '@remix-run/data-table'
-- import { createSqliteDatabaseAdapter } from '@remix-run/data-table-sqlite'
-- const db = createDatabase(createSqliteDatabaseAdapter({ filename: './app.db' }))
-+ import { createSqliteDatabase } from '@remix-run/data-table-sqlite'
-+ const db = createSqliteDatabase({ filename: './app.db' })
-```
-
-`createPostgresDatabase()` and `createMysqlDatabase()` replace their adapter
-pairs the same way. Renames across the three dialect packages:
-`SqliteDatabaseAdapterConfig` → `SqliteDatabaseConfig`, the old `SqliteDatabase`
-*client interface* → `SqliteDatabaseClient`, `MysqlDatabaseAdapterOptions` →
-`MysqlDatabaseOptions`, `PostgresDatabaseAdapterOptions` →
-`PostgresDatabaseOptions`.
-
-Removed from `@remix-run/data-table`: `createDatabase()`, the built-in adapter
-exports, the `db.adapter` escape hatch, `DatabaseAdapter`,
-`AdapterCapabilities`, `AdapterCapabilityOverrides`, `createMigrationRunner()`,
-`MigrationRunner`, `MigrationRunnerOptions`, `GetMigrations`, and `MigrateOptions`.
-
-Renames: `DatabaseAdapter` → `DatabaseDriver`, `AdapterCapabilities` →
-`DatabaseCapabilities`, `DataTableAdapterError` → `DataTableDatabaseError`,
-`MigrateOptions` → `DatabaseMigrateOptions` (with
-`DatabaseMigrationStatusOptions` and `DatabaseResetOptions` for the sibling
-methods).
-
-Individual operation types are **no longer exported**. Derive them from the
-union instead:
-
-```diff
-- import type { SelectOperation, InsertOperation } from '@remix-run/data-table'
-+ import type { DataManipulationOperation } from '@remix-run/data-table'
-+ type SelectOperation = Extract<DataManipulationOperation, { kind: 'select' }>
-```
-
-`Database` gained `wipe()`, `migrate()`, `migrationStatus()`, `reset()`, and
-`close()`. `migrate()` supports both directions, mutually exclusive `to` and
-`step` bounds, dry runs, and a custom journal table. `loadSeed()` from
-`remix/data-table/migrations/node` turns a SQL file into a `Seed` function.
-`runRemixDb()` from `remix/data-table/cli` now takes resolved `Database`,
-`Migrations`, and `Seed` values in a command-discriminated options union.
-
-#### Writing a third-party dialect package
-
-If you maintain your own integration, the shape is now: implement
-`DatabaseDriver`, then subclass `Database` and pass the driver to `super()`.
-Export the subclass and a `createXDatabase()` factory — not the driver.
-
-```ts
-import { Database, type DatabaseOptions, type DatabaseDriver } from '@remix-run/data-table'
-
-class MyDriver implements DatabaseDriver<'sqlite'> { /* ... */ }
-
-export class MyDatabase extends Database<'sqlite'> {
-  constructor(client: MyClient, options?: DatabaseOptions) {
-    super(new MyDriver(client), options)
-  }
-}
-
-export function createMyDatabase(client: MyClient, options?: DatabaseOptions): MyDatabase {
-  return new MyDatabase(client, options)
-}
-```
-
-`DatabaseDriver` requires two members the old `DatabaseAdapter` did not:
-
-- `wipe(): Promise<void>` — destructively recreate the database. Throw a clear
-  error when the driver was handed a caller-owned client and cannot do this,
-  rather than guessing at a database name.
-- `close(): void | Promise<void>` — release owned handles, **idempotent**. A
-  supplied client stays caller-owned; only close what the driver opened.
-
-`compileSql()` is not part of the driver contract — keep it as an internal
-detail. `withMigrationLock?()` is optional and only worth implementing when the
-engine has a real lock; leave `capabilities.migrationLock: false` otherwise.
-
-### Breaking change 5 — session cookies default to `HttpOnly`
-
-`session-middleware@0.4.0`. Omitting `httpOnly` used to mean "off"; it now means
-**on**. Client-side JavaScript that reads the session cookie stops working after
-the bump, and the failure shows up at runtime in the browser, not at build time.
-
-```diff
-  createSessionMiddleware({
-    cookie: {
-      name: 'session',
-+     httpOnly: false, // only if client JS genuinely needs to read it
-    },
-  })
-```
-
-The middleware warns when the protection is explicitly disabled. Prefer leaving
-the default on and moving whatever the client needed onto a separate,
-non-sensitive cookie or a fetch endpoint.
-
-`cookie@0.6.0` underneath: `Cookie.httpOnly` now returns `boolean | undefined`
-instead of defaulting to `false`, which is what lets the middleware distinguish
-"omitted" from "explicitly off". Code comparing `cookie.httpOnly === false`
-needs to handle `undefined`.
-
-### Breaking change 6 — custom cookie `encode`/`decode` own the value
-
-`cookie@0.6.0`. Custom `encode` output used to be wrapped in Remix's default
-base64 representation, and custom `decode` received the value after that wrapper
-was stripped. Now custom `encode` output is signed and serialized **as-is**, and
-custom `decode` receives the **unsigned raw** cookie value.
-
-If you supplied both, they were symmetric and stay symmetric — but anything that
-relied on the implicit base64 layer (a raw-JSON `encode`, say, or a value with
-`;` or `,` in it) must now do its own encoding. The default encoder/decoder is
-unchanged when no custom functions are given. Cookies written by beta.5 with
-custom codecs will not decode on beta.6; plan a rotation or a dual-read.
-
-### Breaking change 7 — `createAssetServer()` file rules renamed
-
-`assets@0.5.0`. `allow`/`deny` became `allowFiles`/`denyFiles`. The old keys are
-just ignored, so the server silently falls back to its defaults — this can
-**expose files** the `deny` list was protecting. Grep for it explicitly.
-
-```diff
-  export const assetServer = createAssetServer({
--   allow: ['app/routes.ts', 'app/**/public/**'],
--   deny: ['app/**/*.test.*'],
-+   allowFiles: ['app/routes.ts', 'app/**/public/**'],
-+   denyFiles: ['app/**/*.test.*'],
-  })
-```
-
-Additive in the same release: `allowPackages` for package-level access control
-(`allowPackages: ['remix']` serves a package and its dependencies), `hmr`
-support that provides an `import.meta.hot` API to JS assets, and
-`scripts.loaders` for post-processing compiled JavaScript with Node-compatible
-synchronous loaders.
-
-### Breaking change 8 — the CLI and test runner
-
-`cli@0.4.0` and `test@0.6.0`, only relevant if the project uses the Remix CLI.
-
-- The standalone **`remix-test` executable is gone**. Use `remix test`.
   ```diff
-  - remix-test --type server --concurrency 1
-  + remix test --type server --concurrency 1
+  -await db.create(settings, { id: 1, data: JSON.stringify({ theme: 'dark' }) })
+  +await db.create(settings, { id: 1, data: { theme: 'dark' } })
   ```
-- `runRemixTest()` from `@remix-run/test/cli` takes **typed runner options**,
-  not an `argv` array, and no longer reads `process.argv` or renders help:
-  ```diff
-    let exitCode = await runRemixTest({
-  -   argv: ['--type', 'server', '--concurrency', '1'],
-      cwd: process.cwd(),
-  +   type: ['server'],
-  +   concurrency: 1,
-    })
+
+- **Arrays interpolated into `sql` expand** into `(?, ?, …)`, one parameter per
+  item; an empty array throws. To bind an array as one value (a Postgres
+  array), wrap it: `rawSql('?', [ids])`.
+- Nested `sql` composition only accepts fragments made by `sql` / `rawSql`
+  from the **same loaded copy** of the package. A hand-built
+  `{ text, values }` object is now bound as a parameter value instead of being
+  spliced in — another reason to keep one copy in the lock.
+- Every adapter binds each parameter as exactly one value. The first-party
+  SQLite driver binds `Date` as UTC text in `current_timestamp` format
+  (`2026-11-20 01:02:03.456`, whole seconds without `.000`) and rejects other
+  non-byte objects.
+- `sql-helpers` gained shared clause compilers (`compileWhereClause()`,
+  `compileLimitOffsetClause()`, `compileReturningClause()`, …) driven by a
+  `SqlCompileContext` with `quoteIdentifier` and `bindValue`. `limit` /
+  `offset` are bound as parameters (`limit ? offset ?`).
+
+#### `@remix-kbn/data-table-sqlite-turso@0.7.0` / `data-table-d1@0.2.0`
+
+The remix-kbn adapters for `data-table@1.1.0`. They implement `decodeValue`,
+bind `Date` the way `data-table-sqlite` does, and use upstream's 1.1.0
+compiler, which also fixes **an upsert with a separate `update` object binding
+its values one column off**. An app upgrading from turso 0.6.x:
+
+- `json()` / `boolean()` / `timestamp()` columns now read back as objects /
+  booleans / `Date`s. Look for code that `JSON.parse`d them, compared to `1`,
+  or wrapped them in `new Date()`.
+- **Existing `timestamp()` rows need converting** if you filter or sort on
+  them. libSQL used to bind a `Date` as epoch milliseconds (stored as `real`);
+  0.7.0 writes text. Old rows still read back as numbers, but a `Date` filter
+  no longer matches them. Convert once:
+
+  ```sql
+  update my_table set seen_at = case when seen_at % 1000 = 0
+      then strftime('%Y-%m-%d %H:%M:%S', seen_at / 1000.0, 'unixepoch')
+      else strftime('%Y-%m-%d %H:%M:%f', seen_at / 1000.0, 'unixepoch') end
+    where typeof(seen_at) in ('integer', 'real');
   ```
-  `getRemixTestHelpText()` was removed; `remix test -h` prints it.
-  `remixTestPools` is now exported, and `coverage.enabled` accepts `'inherit'`.
-- **`remix-test.config.ts` / `.js` discovery was removed**, along with the
-  `config` path option. Static test settings move under `remix.json#test`.
-- A new optional **`remix.json`** (parsed as JSONC) configures database
-  adapters, migrations, seeds, every `remix test` setting, and `remix doctor`
-  strict mode. Relative paths and globs resolve from the config file's
-  directory; explicit flags and positional arguments win. `--config <path>` is
-  now the global config selector — its old test-specific meaning is gone.
-  Negative flags (`--no-strict`, `--no-watch`, `--no-coverage`, `--no-quiet`,
-  `--no-browser.open`, `--no-browser.echo`) override configured `true` values.
-- New `remix db` commands wipe, migrate, inspect, seed, and reset the app
-  database, driven by `remix.json`. `remix db wipe` and `remix db reset` require
-  `--force`.
-- `remix test` now defaults `NODE_ENV` to `test` when unset, and `.only`
-  filtering applies across the whole test module rather than the nearest
-  `describe`. New `--only` and `--quiet`/`-q` flags.
-- New projects scaffold an `npm run hmr` command and `hmr.ts` runner, with the
-  browser runtime entry at `app/actions/public/entry.ts` and browser-reachable
-  source in colocated `public/` directories.
 
-### Trap — `static-middleware` still excludes `fetch-router@0.21.0`
+  `typeof()` reports `real`, not `integer`, for what libSQL wrote: a filter on
+  `'integer'` alone converts nothing.
 
-> **Fixed in beta.10.** This whole section applies only while a project sits on
-> beta.6. `static-middleware@0.4.14` widens the range, so the right move is to
-> go to beta.10 and delete the cast — see
-> [The `staticFiles()` cast is no longer needed](#the-staticfiles-cast-is-no-longer-needed).
-> Read on only if you are staying on beta.6 for now.
+- The template's `/api/turso` sample uses only `text` / `integer` columns and
+  is unaffected.
 
-`@remix-run/static-middleware@0.4.13` is the latest release at beta.6 and was
-deliberately *not* bumped — but it still declares
-`"@remix-run/fetch-router": "^0.20.1"`, and `^0.20.1` excludes `0.21.0`. The
-`remix` meta-package pins both, so any project using `staticFiles()` alongside
-`fetch-router@0.21.0` resolves **two copies** of fetch-router and gets:
+#### `component@1.3.0`
 
-```
-TS2322: Type 'Middleware' is not assignable to type 'AnyMiddleware'.
-  Property '#private' in type 'RequestContext' refers to a different member
-  that cannot be accessed from within type 'RequestContext'.
-```
+- `createScheduler()` lost its unused third argument: a three-argument call is
+  now `Expected 2 arguments, but got 3`. Drop the argument.
+- **Form controls keep pre-hydration edits** and replay them as `input` /
+  `change` events once the handlers attach, with `event.isTrusted === false`,
+  at hydration time. A handler that submits, saves or fetches on `input` now
+  runs as soon as the control hydrates if the visitor (or the browser's form
+  restoration) touched it first. `autocomplete="off"` opts a control out of
+  restoration.
+- `<select>` initialises as `value`, then the initial `defaultValue`, then
+  option `selected`, on server, mount and hydration alike. Multiple selects
+  take arrays.
+- Additive: `defaultResolveFrame` with `{ fetch, commit }` overrides, the
+  `rmx:navigation` event, `<Frame loading="lazy">`, `updateUrl()`,
+  `defaultPrefetch`, `prefetch(anchor)`. A custom `resolveFrame` that only
+  re-implemented the default to change headers or caching can shrink to
+  `defaultResolveFrame({ fetch })`.
 
-`RequestContext` is branded with a private field, so the two `Middleware` types
-are nominally distinct even though they are structurally identical.
+#### `ui@0.14.0`
 
-**This is a type-level problem only.** static-middleware imports fetch-router
-with `import type` and never calls into it at runtime, so the duplicate is
-inert. Re-type the middleware at the one call site and leave a note to remove
-it:
+- `animateExit()` starts its animation synchronously in `beforeRemove` instead
+  of in a microtask. Only a custom mixin that reads computed styles or
+  `getAnimations()` in `beforeRemove` and expects the exit not to have started
+  is affected.
+- Additive: per-property `transition` timing for `animateEntrance()` /
+  `animateExit()`, `@remix-run/ui/toast`, experimental `@remix-run/ui/form`.
 
-```ts
-import { createRouter, type Middleware } from '@remix-run/fetch-router'
-import { staticFiles } from '@remix-run/static-middleware'
+#### Server-side behaviour
 
-// static-middleware@0.4.13 pins fetch-router ^0.20.1, so Deno/npm resolve a
-// second copy and the Middleware types no longer overlap. Its fetch-router
-// import is type-only, so this is sound. Drop once upstream widens the range.
-const serveStatic = staticFiles(dir) as unknown as Middleware
+- `render-middleware@1.1.1`: an error thrown while rendering the **shell** now
+  rejects `router.fetch()` so the server answers `500`. It used to answer `200`
+  with a broken page. A test that asserted a 200 for a throwing page will fail.
+- `fetch-router@1.0.1`: for a `HEAD` served by a `GET` route, middleware sees
+  the full `GET` response and the body is stripped afterwards. Late responses
+  to aborted requests have their bodies cancelled.
+- `node-fetch-server@1.0.1`: an invalid host (path, userinfo, whitespace in
+  `Host` / `:authority` / a trusted `X-Forwarded-Host`) makes
+  `createRequest()` throw and the listener answer `400`.
+- `headers@1.1.1`: `Vary` keeps names as first given (`Cookie`, not `cookie`;
+  Safari only varies on the capitalised spelling) and `Accept-*` weights pick
+  the most specific match per RFC 9110.
 
-const router = createRouter({ middleware: [serveStatic] })
-```
+## Verifying
 
-`as Middleware` alone is rejected ("neither type sufficiently overlaps") — the
-private-field brand forces the double cast.
-
-Do not try to fix this with npm `overrides`: **Deno ignores `overrides` in
-`package.json`**, even with `nodeModulesDir` enabled, so the duplicate survives.
-Deno's `links` (formerly `patch`) only redirects to local source trees, not to a
-different registry version.
-
-The same shape will appear for any middleware package left at a beta.5 version
-while its peers move — check the resolved tree, not just the manifest, when a
-`Middleware` assignment suddenly stops type-checking.
-
-### New: HMR packages
-
-`@remix-run/ui-hmr@0.1.0` and `@remix-run/node-hmr@0.1.0` are new and purely
-opt-in. Use `remix/ui-hmr/node` as a Node import hook for server modules and
-`uiHmr()` from `remix/ui-hmr/assets` alongside `remix/assets` for browser
-modules; `node-hmr` supervises a Node app in development with an
-`import.meta.hot` API and optional parent-owned browser HMR coordination through
-`browserHmrChannel`. Nothing to migrate — skip unless you want HMR.
-
-## Doing the upgrade
-
-In a Deno workspace the versions live in each member's `deno.json` `imports`,
-not in one root manifest. Bump every member, then relock:
-
-```bash
-# after editing the version ranges in each packages/*/deno.json and app deno.json
-deno install                    # relock
-deno check && deno lint && deno fmt --check
-deno test -P
-```
-
-`deno outdated --update --latest` across the workspace works too, but it will
-also pull unrelated majors — read its plan before accepting. If Deno refuses a
-version with "newer than the specified minimum dependency date", that is
-`minimumDependencyAge`, not a bad range; see the `deno-min-dep-age` skill.
-
-Pin the meta-package to an explicit release (`npm:remix@3.0.0-rc.4`). A bare
-`npm:remix` resolves `latest`, which is **Remix v2** — v3 lives on the `next`
-tag.
-
-Order that avoids chasing type errors:
-
-1. Bump every `@remix-run/*` range in one pass, lockfile included. Land on
-   rc.4; never stop at beta.9, which cannot resolve.
-2. Fix the data-table construction sites first — they are the loudest.
-3. Then the browser `resolveFrame` signature, which the compiler will *not*
-   flag.
-4. Then grep for the silent ones: `.href(` with two arguments, `createHref(`
-   with three, `allow:`/`deny:` in `createAssetServer`, `httpOnly`, custom
-   cookie `encode`/`decode`, and route patterns with two params in a segment.
-5. Delete the `staticFiles()` cast and any `fetch-router` override once on
-   beta.10.
-6. Rename every `rmx-*` attribute to `data-rmx-*` (and `data-key` to
-   `data-rmx-key`) for rc.1. Grep for them — nothing else will find them.
-7. Give any asset server of your own a `getScriptEntry` for rc.2, and check every
-   `@remix-run/*` range in a library you publish — an additive bump still excludes
-   the previous minor, and a stale range resolves a second copy of the runtime.
-8. For rc.3, wrap every `innerHTML` / `srcDoc` value in `unsafeHTML()` — that
-   one the compiler finds — then walk the silent list: a session cookie with a
-   `maxAge` or `expires` (everyone gets logged out), `cors()` with
-   `credentials: true` and no `origin`, CSRF or COP behind
-   `method-override-middleware`, `parseTar` on archives over 20 MiB, a custom
-   data-table adapter compiling `order by`, and `parseFormData` on anything that
-   is not multipart or url-encoded.
-9. For rc.4 there is nothing to edit but ranges — then read the lockfile's
-   `jsr` section for a second `@remix-run/ui`, which is the only thing that hop
-   breaks and the only place it shows.
-10. Type-check, lint, test, and exercise link, form, and frame navigation in a
-   browser — the `resolveFrame` change, the form enhancement, beta.10's default
-   resolver, the rc.1 attribute rename, and rc.3's prop filtering do not show up
-   in unit tests.
+- `deno task check && deno task test && deno task build`, and `build:cf` for a
+  Cloudflare app.
+- Exercise hydration, a frame navigation and a form in a real browser. The
+  template's `deno task test:browser` downloads lightpanda from
+  `get.lightpanda.io`; where that host is unreachable, drive the pre-installed
+  Chromium with Playwright against `deno serve` instead.
+- **Compare against `main` before blaming the upgrade.** The template logs
+  `Hydration mismatch: text mismatch 0 N` on `/hydration` on `main` too. Run
+  the same script against a `git worktree` of `main` on a second port and diff
+  the results.
+- After a dependency bump in the template, check that `/blog` still renders
+  its article bodies (`CLAUDE.md` asks for it).
 
 ## Checklist
 
-### Landing on rc.4
-
-- [ ] `remix` pinned to `3.0.0-rc.4` explicitly — not bare `npm:remix` (that is v2),
-      and not beta.9 (uninstallable).
-- [ ] **One `@remix-run/ui` in the lockfile.** Every package *you* publish that
-      depends on it moved to `^0.11.0` and was released, or better, stopped
-      importing it — `^0.11.0` excludes 0.10, `deno outdated` does not see the
-      stale range, and it only shows up in the lock's `jsr` section.
-- [ ] If a duplicate remains, `deno info --json` on each entry point says which
-      graph it is in. Client graph: blocking. Server/build graph only: shippable,
-      fix on its own schedule.
-- [ ] No `clientEntry` passes a function or class instance as a prop —
-      `ui@0.11.0` types those as `never`.
-- [ ] No `createHref` builds a pathname wildcard from path pieces that could
-      contain `.` or `..` — `route-pattern@0.25.0` throws now.
-
-### Landing on rc.3
-
-- [ ] `remix` pinned to `3.0.0-rc.3` explicitly — not bare `npm:remix`
-      (that is v2), and not beta.9 (uninstallable).
-- [ ] Every `innerHTML` / `srcDoc` / `srcdoc` JSX prop wrapped in `unsafeHTML()`.
-- [ ] The session cookie's lifetime decided deliberately: if it has `maxAge` or
-      `expires`, rc.3 changes the cookie's wire format and **every existing
-      session is dropped on deploy**.
-- [ ] Any `cors()` with `credentials: true` carries an explicit `origin` — the
-      `*` default is no longer reflected, and browsers reject it.
-- [ ] CSRF / COP re-checked wherever `method-override-middleware` runs: they
-      read the real HTTP method now, so overridden requests need a token.
-- [ ] `parseTar` / `TarParser` call sites given explicit `maxEntrySize`,
-      `maxTotalSize`, `maxEntries` if any archive exceeds 2 MiB per entry,
-      20 MiB total, or 5000 entries — and `pathPolicy` considered.
-- [ ] No `update()` / `delete()` relies on a `notIn(col, [])`-style where clause.
-- [ ] A custom data-table adapter compiles `order by` through
-      `compileOrderByDirection`, not `direction.toUpperCase()`.
-- [ ] `parseFormData` is never handed a body that is not `multipart/*` or
-      `application/x-www-form-urlencoded` — it throws now instead of falling back.
-- [ ] Nothing renders a deliberate `javascript:` URL or an `on*` host prop; both
-      are stripped at render with no error.
-- [ ] Anything reading `Cookie#secure` handles `undefined` (`strict` will say so).
-- [ ] Exercised in a real browser: sign-in, a cross-origin credentialed request,
-      and a form that posts. None of the three fails a unit test.
-
-### Landing on rc.2
-
-- [ ] `remix` pinned to `3.0.0-rc.2` explicitly — not bare `npm:remix`
-      (that is v2), and not beta.9 (uninstallable).
-- [ ] A custom asset server passed to `render({ assets })` answers
-      `getScriptEntry`; `@remix-run/assets`' own server does from 0.7.0.
-- [ ] Nothing asserts a `404` for a path that matches a route with another
-      method — `fetch-router@0.22.0` answers `405` with an `Allow` header.
-- [ ] Every `@remix-run/*` range in a package you publish moved with the set —
-      `^0.9.0` excludes 0.8, and a stale range gives consumers a second runtime.
-
-### Landing on rc.1
-- [ ] No bare `rmx-document` / `rmx-target` / `rmx-src` / `rmx-history` /
-      `rmx-reset-scroll` / `rmx-preserve-dom` left anywhere — the grep in
-      [beta.10 → rc.1](#beta10--rc1) returns nothing — and `data-key` renamed
-      to `data-rmx-key`. Neither the compiler nor the runtime reports these.
-- [ ] `addEventListeners` call sites converted to
-      `addEventListener(..., { signal })`, with an explicit `AbortController`
-      wherever the old per-dispatch re-entry signal was used.
-- [ ] Direct `@remix-run/auth` / `@remix-run/assets` imports updated for their
-      renamed exports.
-
-### Landing on beta.10
-- [ ] `static-middleware` at 0.4.14, the `as unknown as Middleware` cast
-      deleted, and any `overrides`/`resolutions` pin on `fetch-router` removed.
-- [ ] `resolveFrame` either deleted (if it only fetched HTML) or kept
-      deliberately for custom headers/encoding/error UI.
-- [ ] Links and forms that must stay document navigations marked
-      `rmx-document` — `data-rmx-document` if you are going on to rc.1 — and
-      navigation exercised in a real browser.
-
-### From beta.5
-
-- [ ] Every `@remix-run/*` range bumped per the table; lockfile regenerated.
-- [ ] `createDatabase`/`create*DatabaseAdapter` replaced with `create*Database()`.
-- [ ] `DatabaseAdapter`/`AdapterCapabilities`/`DataTableAdapterError` renamed;
-      operation types derived from `DataManipulationOperation`.
-- [ ] Custom drivers implement `wipe()` and idempotent `close()`, and subclass
-      `Database`.
-- [ ] Browser `resolveFrame` reads `options.signal` / `options.target`; server
-      `resolveFrame` left alone.
-- [ ] No `.href(params, searchParams)` or `createHref(pattern, params, sp)`
-      positional calls remain.
-- [ ] No route pattern puts two params in one delimiter-bounded segment.
-- [ ] `httpOnly` decided explicitly wherever client JS reads a session cookie.
-- [ ] `createAssetServer` uses `allowFiles`/`denyFiles`.
-- [ ] `remix-test` invocations and `remix-test.config.*` migrated to `remix test`
-      and `remix.json#test`.
-- [ ] No duplicate `fetch-router` in the resolved tree — or, if staying on
-      beta.6, the `staticFiles()` call site re-typed with a note.
-- [ ] `deno check` / `deno lint` / `deno fmt --check` / tests pass.
-- [ ] Frame navigation and form submission exercised in a real browser.
+- [ ] Target taken from `npm view remix dist-tags` → `latest`, not `next`.
+- [ ] Every `@remix-run/*` floor moved to the meta-package's set, and
+      `@remix-run/ui` checked separately (`npm view @remix-run/ui version`).
+- [ ] `remix` changelog read, plus the package changelogs for what the project
+      imports, patch entries included.
+- [ ] `deno install`, then **no duplicate `@remix-run/*` in `deno.lock`**, with
+      the `jsr` section read for your own packages' ranges.
+- [ ] Your own packages: floors raised only where the code needs them;
+      only those released; merge waits for the human (it publishes).
+- [ ] Custom data-table drivers diffed against the first-party driver and
+      compiler of the new version; round-trip tests per column type.
+- [ ] Turso apps on `timestamp()` columns: old rows converted.
+- [ ] No pre-serialized JSON written to `json()` columns; no empty array
+      interpolated into `sql`.
+- [ ] `check` / `test` / `build` (and `build:cf`) green; hydration, a frame
+      navigation and a form exercised in a browser, compared with `main`.
