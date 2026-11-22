@@ -143,52 +143,26 @@ does not cascade to transitive dependencies).
 
 ### `remix-v3-upgrade`
 
-Upgrades a **Remix v3** project across beta and rc boundaries — currently up to
-`3.0.0-rc.3`. Ships a skill with the `@remix-run/*` version table for each hop
-and a before/after diff for every breaking change.
+Upgrades a **Remix 3.x** project (3.0.0 stable and later) to a newer 3.x
+release. Written for apps derived from
+[deno-remix-tmpl](https://github.com/kuboon/deno-remix-tmpl) and the
+`@remix-kbn/*` packages they use; nothing before 3.0.0 is covered.
 
-Which release to land on is itself a trap: `beta.7` and `beta.8` were never
-published, and **`beta.9` cannot install** — it pins a renamed
-`@remix-run/static-files-middleware@^0.1.0` that only exists as a `0.0.0`
-placeholder. Go `beta.6` → `beta.10` → `rc.1` → `rc.2` → `rc.3`.
+A 3.x minor rarely breaks the compiler. What breaks is behaviour and code that
+re-implements a contract, and the skill is about finding those:
 
-`rc.2` → `rc.3` moves 33 of the 48 pinned packages, and it is a security
-hardening release: the compiler catches exactly one of its breaks
-(`innerHTML` / `srcDoc` take an `UnsafeHTML` now, not a string), and the rest
-report nothing at all. `session-middleware@0.5.0` changes the session cookie's
-wire format whenever the cookie has a lifetime, so **every signed-in user is
-logged out the moment rc.3 deploys**. `cors-middleware@0.2.0` stops reflecting
-the request origin for credentialed requests, which browsers then reject.
-CSRF and COP check the real HTTP method instead of the overridden one.
-`tar-parser@0.8.0` enforces size limits and a path policy by default,
-`data-table@0.6.0` rejects an unconditional `update()` / `delete()`, and
-`ui@0.10.0` silently drops `on*` props and neuters `javascript:` URLs at
-render. The skill lists each one with the diff that causes it.
-
-`beta.10` → `rc.1` moves ten packages, and one of them breaks silently:
-`ui@0.8.0` renames **every** `rmx-*` DOM attribute to `data-rmx-*`
-(`rmx-document`, `rmx-target`, `rmx-src`, `rmx-history`, `rmx-reset-scroll`,
-`rmx-preserve-dom`, plus `data-key` → `data-rmx-key`) with no alias and no
-warning. TypeScript does not check hyphenated JSX attribute names, so the old
-spelling still compiles and still renders — the only symptom is behavioral, such
-as a nav link changing the URL without changing the view. The skill carries the
-rename table, the grep that finds them, and the `addEventListeners` removal that
-lands in the same bump.
-
-`beta.6` → `beta.10` moves only three packages: `static-middleware@0.4.14`
-finally widens its `fetch-router` range, so the `as unknown as Middleware` cast
-on `staticFiles()` (and any package-manager override) can be deleted — verified
-both ways with `deno check`; and `ui@0.7.0` gives `run()` a **default frame
-resolver**, which means every `run()` call now intercepts same-origin link and
-form navigation, even in apps that never passed a resolver.
-
-The `beta.5` → `beta.6` section is the large one: data-table dropping adapters
-for `create*Database()` and `DatabaseDriver`, the browser
-`resolveFrame(src, options)` signature, `href()`/`createHref()` taking an options
-object, delimiter-bounded route params that reject `/:year-:month`, session
-cookies defaulting to `HttpOnly`, `createAssetServer`'s `allowFiles`/`denyFiles`,
-and the removal of `remix-test`. It leads with the four that compile clean and
-fail silently, since those are the ones a bump quietly ships to production.
+- where the changelogs actually are (`@remix-run/*` npm tarballs ship none),
+- `@remix-run/ui` being outside the `remix` meta-package's pinned set, so a
+  0.x range never moves on its own,
+- the lockfile check for a second `@remix-run/component`, including ranges
+  declared by your own JSR packages,
+- keeping a custom `data-table` driver and any vendored SQL compiler in step
+  with upstream, with round-trip tests per column type,
+- per-release notes from 3.3.0 on: `data-table@1.1.0` changing how `json()` /
+  `boolean()` / `timestamp()` values are written and read, the SQL to convert
+  Turso `timestamp()` rows written by `data-table-sqlite-turso` 0.6.x, form edits
+  replayed at hydration with `isTrusted === false`, and render errors that now
+  answer 500.
 
 ### `remix-db-migrations-deno`
 
