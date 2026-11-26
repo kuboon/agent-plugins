@@ -29,5 +29,6 @@ dependencies:
     - kuboon/agent-plugins/plugins/cloudflare-cf-cli/skills/cloudflare-cf-cli
     - kuboon/agent-plugins/plugins/x-player-card/skills/x-player-card
     - kuboon/agent-plugins/plugins/later/skills/later
+    - kuboon/agent-plugins/plugins/new-repository/skills/new-repository
   mcp: []
 includes: auto

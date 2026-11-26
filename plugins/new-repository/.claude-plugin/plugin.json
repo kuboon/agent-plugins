@@ -1,0 +1,10 @@
+{
+  "name": "new-repository",
+  "description": "Create a new GitHub repository from the kuboon/deno-remix-tmpl template via kagi, and apply the standard repo settings (wiki/discussions/projects off, release immutability, auto-merge, delete-branch-on-merge, GitHub Pages via Actions).",
+  "version": "0.1.0",
+  "author": {
+    "name": "Ohkubo KOHEI",
+    "email": "kuboon@gmail.com"
+  },
+  "license": "MIT"
+}
