@@ -108,6 +108,11 @@
       "description": "/later <idea> — park a next-task idea that came up mid-session as a Suggested task card (spawn_task) with a standalone prompt, without derailing the current work."
     },
     {
+      "name": "new-repository",
+      "source": "./plugins/new-repository",
+      "description": "Create a new GitHub repository from the kuboon/deno-remix-tmpl template via kagi, and apply the standard repo settings (wiki/discussions/projects off, release immutability, auto-merge, delete-branch-on-merge, GitHub Pages via Actions)."
+    },
+    {
       "name": "status-board",
       "source": {
         "source": "git-subdir",
